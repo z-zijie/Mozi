@@ -4,7 +4,9 @@ Mozi is a Codex plugin for an end-to-end NPU operator development harness.
 
 ## Supported Workflows
 
-Invoke `$mozi:create-prd` with an AddRelu operator request to create the initialized PRD stub at `docs/mozi/addrelu/prd.md`. The current workflow intentionally leaves the PRD empty and does not expand the AddRelu requirements unless explicitly requested.
+Invoke `$mozi:create-prd` with a brief operator request to generate a normalized PRD at `docs/mozi/<op-name-kebab-case>/prd.md`. For example, an AddRelu request writes `docs/mozi/add-relu/prd.md` with the title `# AddRelu PRD`.
+
+The workflow uses `plugins/mozi/skills/create-prd/template/PRD.md.templ` as the canonical PRD structure. It fills sections from the brief prompt, marks missing details as `TBD`, and tracks unresolved decisions in the open questions section.
 
 ## Installation
 

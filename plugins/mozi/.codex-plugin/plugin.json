@@ -1,7 +1,7 @@
 {
   "name": "mozi",
   "version": "0.1.0",
-  "description": "Codex plugin for an end-to-end NPU operator development harness, currently initializing the AddRelu PRD stub.",
+  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation.",
   "author": {
     "name": "z-zijie",
     "email": "z-zijie@users.noreply.github.com",
@@ -15,27 +15,26 @@
     "operator-development",
     "harness",
     "prd",
-    "addrelu",
     "codex-plugin"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Mozi",
-    "shortDescription": "Initialize AddRelu PRD stubs for NPU operator harness work.",
-    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflow provides $mozi:create-prd to initialize an empty AddRelu PRD stub at docs/mozi/addrelu/prd.md without expanding requirements.",
+    "shortDescription": "Generate normalized operator PRDs for NPU harness work.",
+    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflow provides $mozi:create-prd to generate a normalized operator PRD from a brief user prompt.",
     "developerName": "z-zijie",
     "category": "Productivity",
     "capabilities": [
       "NPU operator harness",
-      "PRD stub creation"
+      "Operator PRD generation"
     ],
     "websiteURL": "https://github.com/z-zijie/Mozi",
     "privacyPolicyURL": "https://github.com/z-zijie/Mozi",
     "termsOfServiceURL": "https://github.com/z-zijie/Mozi",
     "defaultPrompt": [
-      "Use $mozi:create-prd to initialize the AddRelu PRD stub.",
-      "Create the empty AddRelu PRD file for the NPU harness workflow.",
-      "Prepare the Mozi AddRelu PRD stub without filling requirements."
+      "Use $mozi:create-prd to generate a PRD for AddRelu.",
+      "Create a normalized operator PRD from a brief prompt.",
+      "Prepare a structured PRD document for a new NPU operator."
     ],
     "brandColor": "#2563EB"
   }

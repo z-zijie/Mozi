@@ -1,4 +1,4 @@
 interface:
-  display_name: "Create PRD"
-  short_description: "Create the AddRelu PRD stub"
-  default_prompt: "Use $mozi:create-prd to create docs/mozi/addrelu/prd.md as an empty AddRelu PRD stub."
+  display_name: "Create Operator PRD"
+  short_description: "Generate a normalized operator PRD from a brief prompt"
+  default_prompt: "Use $mozi:create-prd to generate a normalized PRD for an operator from a brief prompt."
