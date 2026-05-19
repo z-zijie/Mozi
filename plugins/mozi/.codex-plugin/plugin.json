@@ -14,7 +14,7 @@
     "[TODO: keyword1]",
     "[TODO: keyword2]"
   ],
-  "skills": "[TODO: ./skills/]",
+  "skills": "./skills/",
   "hooks": "[TODO: ./hooks.json]",
   "mcpServers": "[TODO: ./.mcp.json]",
   "apps": "[TODO: ./.app.json]",

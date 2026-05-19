@@ -1,0 +1,20 @@
+{
+  "name": "mozi-marketplace",
+  "interface": {
+    "displayName": "Mozi Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "mozi",
+      "source": {
+        "source": "local",
+        "path": "./plugins/mozi"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create PRD"
+  short_description: "Create the AddRelu PRD stub"
+  default_prompt: "Use $mozi:create-prd to create docs/mozi/addrelu/prd.md as an empty AddRelu PRD stub."
