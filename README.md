@@ -1,12 +1,10 @@
 # Mozi
 
-Mozi is a Codex plugin repository.
-
-The plugin manifest intentionally still contains `[TODO: ...]` placeholders for unknown plugin metadata. Fill those in once the plugin description, ownership, assets, hooks, MCP servers, or apps are defined.
+Mozi is a Codex plugin for an end-to-end NPU operator development harness.
 
 ## Supported Workflows
 
-Invoke `$mozi:create-prd` with an AddRelu operator request to create the initialized PRD stub at `docs/mozi/addrelu/prd.md`. The current version intentionally leaves the PRD empty.
+Invoke `$mozi:create-prd` with an AddRelu operator request to create the initialized PRD stub at `docs/mozi/addrelu/prd.md`. The current workflow intentionally leaves the PRD empty and does not expand the AddRelu requirements unless explicitly requested.
 
 ## Installation
 

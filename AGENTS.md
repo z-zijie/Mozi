@@ -9,7 +9,7 @@ This repository is a Codex plugin repository.
 - Keep the repo-local marketplace entry at `.agents/plugins/marketplace.json`.
 - The plugin folder name and `plugin.json` `name` value must remain `mozi`.
 - The marketplace entry must point to `./plugins/mozi`.
-- Leave manifest `[TODO: ...]` placeholders in place until the actual plugin metadata, assets, skills, hooks, MCP servers, or apps are known.
+- Keep manifest metadata aligned with implemented plugin components. Do not add hooks, MCP servers, apps, or asset references unless the referenced files exist.
 - Treat unrelated project skeleton files as incidental unless the user explicitly asks to work on them.
 
 ## Validation
