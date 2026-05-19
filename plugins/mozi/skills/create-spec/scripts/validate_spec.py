@@ -29,6 +29,7 @@ REQUIRED_OPERATOR_HEADINGS = (
     "## 12. Data Type Support / 数据类型支持",
 )
 OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
+SHAPE_SEMANTICS_HEADING = "## 11. Shape Semantics / Shape 语义"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = (
     "Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature with docstring, and a framework-independent pure C++ function signature with Doxygen documentation. The interface definitions are the documentation: every Python/C++ parameter must be documented in the signature block itself, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant."
 )
@@ -47,7 +48,10 @@ NO_OPEN_ISSUES_VALUES = {
 }
 H3_RE = re.compile(r"^### .+$", re.MULTILINE)
 FENCE_RE_TEMPLATE = r"```{language}\s*\n(.*?)\n```"
-PYTHON_DEF_RE = re.compile(r"\bdef\s+[A-Za-z_]\w*\s*\((.*?)\)\s*(?:->\s*[^:\n]+)?\s*:", re.DOTALL)
+PYTHON_SIGNATURE_RE = re.compile(
+    r"\bdef\s+(?P<name>[A-Za-z_]\w*)\s*\((?P<params>.*?)\)\s*(?:->\s*[^:\n]+)?\s*:",
+    re.DOTALL,
+)
 CPP_SIGNATURE_RE = re.compile(
     r"(?P<return>[A-Za-z_][\w:<>,\s*&]*?)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*"
@@ -68,6 +72,8 @@ PYTHON_ARGS_SECTION_RE = re.compile(
 PYTHON_ARG_RE = re.compile(r"^\s{4,}([A-Za-z_]\w*)\s*(?:\([^)\n]*\))?\s*:", re.MULTILINE)
 CPP_DOXYGEN_RE = re.compile(r"/\*\*(?P<body>.*?)\*/", re.DOTALL)
 CPP_PARAM_RE = re.compile(r"@param(?:\s+\[[^\]\n]+\])?\s+([A-Za-z_]\w*)\b")
+NUMPY_IMPORT_RE = re.compile(r"^\s*import\s+numpy\s+as\s+np\s*$", re.MULTILINE)
+RETURN_RE = re.compile(r"^\s*return\b", re.MULTILINE)
 
 
 def read_text(path: Path, label: str) -> str:
@@ -147,26 +153,45 @@ def split_params(params_text: str) -> list[str]:
     return params
 
 
-def parse_python_params(signature_text: str) -> tuple[set[str], list[str]]:
-    errors: list[str] = []
-    match = PYTHON_DEF_RE.search(signature_text)
-    if not match:
-        return set(), ["Pure Python signature must contain a def function signature"]
+def normalize_python_param(raw_param: str) -> str:
+    return re.sub(r"\s+", "", raw_param.strip())
 
-    params: set[str] = set()
-    for raw_param in split_params(match.group(1)):
+
+def parse_python_signature_details(
+    signature_text: str,
+    label: str,
+) -> tuple[str | None, list[str], list[str], list[str]]:
+    errors: list[str] = []
+    match = PYTHON_SIGNATURE_RE.search(signature_text)
+    if not match:
+        return None, [], [], [f"{label} must contain a def function signature"]
+
+    params: list[str] = []
+    raw_params = split_params(match.group("params"))
+    normalized_params = [normalize_python_param(raw_param) for raw_param in raw_params]
+    for raw_param in raw_params:
         param = raw_param.strip()
         if param in {"", "/", "*"}:
             continue
         if param.startswith(("*args", "**kwargs")):
-            errors.append(f"Pure Python signature uses unsupported variadic parameter: {param}")
+            errors.append(f"{label} uses unsupported variadic parameter: {param}")
             continue
         param = param.lstrip("*").split("=", 1)[0].split(":", 1)[0].strip()
         if not re.fullmatch(r"[A-Za-z_]\w*", param):
-            errors.append(f"Cannot parse Pure Python parameter name from: {raw_param}")
+            errors.append(f"Cannot parse {label} parameter name from: {raw_param}")
             continue
-        params.add(param)
-    return params, errors
+        params.append(param)
+    return match.group("name"), params, normalized_params, errors
+
+
+def parse_python_signature(signature_text: str, label: str) -> tuple[str | None, list[str], list[str]]:
+    name, params, _normalized_params, errors = parse_python_signature_details(signature_text, label)
+    return name, params, errors
+
+
+def parse_python_params(signature_text: str) -> tuple[set[str], list[str]]:
+    _name, params, errors = parse_python_signature(signature_text, "Pure Python signature")
+    return set(params), errors
 
 
 def parse_cpp_params(signature_text: str) -> tuple[set[str], list[str]]:
@@ -295,6 +320,70 @@ def validate_operator_interface(operator_interface_body: str) -> list[str]:
     return errors
 
 
+def extract_operator_python_block(operator_interface_body: str) -> str | None:
+    h3_sections = extract_h3_sections(operator_interface_body)
+    return extract_fenced_block(h3_sections.get("### Pure Python Signature", ""), "python")
+
+
+def validate_shape_semantics(shape_body: str, operator_python_block: str | None) -> list[str]:
+    errors: list[str] = []
+
+    if H3_RE.search(shape_body):
+        errors.append("Shape Semantics section must not add subsection headings")
+
+    shape_python_block = extract_fenced_block(shape_body, "python")
+    if not shape_python_block:
+        return errors + ["Shape Semantics section must include a python fenced code block for NumPy InferShape"]
+
+    if not NUMPY_IMPORT_RE.search(shape_python_block):
+        errors.append("Shape Semantics InferShape code block must include 'import numpy as np'")
+
+    shape_name, shape_params, shape_param_texts, shape_signature_errors = parse_python_signature_details(
+        shape_python_block,
+        "Shape Semantics InferShape function",
+    )
+    errors.extend(shape_signature_errors)
+
+    if operator_python_block:
+        (
+            operator_name,
+            _operator_params,
+            operator_param_texts,
+            operator_signature_errors,
+        ) = parse_python_signature_details(operator_python_block, "Pure Python signature")
+        if not operator_signature_errors and not shape_signature_errors:
+            if shape_name != operator_name:
+                errors.append(
+                    "Shape Semantics InferShape function name must match Pure Python Signature "
+                    f"({operator_name})"
+                )
+            if shape_param_texts != operator_param_texts:
+                errors.append(
+                    "Shape Semantics InferShape parameters must match Pure Python Signature "
+                    f"({', '.join(operator_param_texts)})"
+                )
+
+    documented_shape_params, doc_errors = parse_python_documented_params(shape_python_block)
+    errors.extend(
+        error.replace("Pure Python Signature", "Shape Semantics InferShape").replace(
+            "Pure Python docstring",
+            "Shape Semantics InferShape docstring",
+        )
+        for error in doc_errors
+    )
+    missing_shape_docs = sorted(param for param in shape_params if param not in documented_shape_params)
+    if missing_shape_docs:
+        errors.append(
+            "Shape Semantics InferShape docstring Args section is missing parameters: "
+            + ", ".join(missing_shape_docs)
+        )
+
+    if not RETURN_RE.search(shape_python_block):
+        errors.append("Shape Semantics InferShape function must include a return statement")
+
+    return errors
+
+
 def infer_operator(spec_text: str) -> str | None:
     match = H1_RE.search(spec_text)
     return match.group(1) if match else None
@@ -364,6 +453,15 @@ def validate(spec_path: Path, template_path: Path, expected_operator: str | None
     operator_interface_body = sections.get(OPERATOR_INTERFACE_HEADING, "").strip()
     if operator_interface_body:
         errors.extend(validate_operator_interface(operator_interface_body))
+
+    shape_semantics_body = sections.get(SHAPE_SEMANTICS_HEADING, "").strip()
+    if shape_semantics_body:
+        errors.extend(
+            validate_shape_semantics(
+                shape_semantics_body,
+                extract_operator_python_block(operator_interface_body),
+            )
+        )
 
     open_issues = strip_template_guidance(
         sections.get(OPEN_ISSUES_HEADING, "").strip(),

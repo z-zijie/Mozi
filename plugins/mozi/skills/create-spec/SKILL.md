@@ -88,6 +88,10 @@ The generated SPEC should be precise enough for DESIGN and implementation work t
 - State supported and unsupported dtype, shape, rank, scalar, empty tensor, layout, and format behavior when the PRD provides it.
 - Define mathematical semantics with rigorous pure mathematical language and LaTeX formulas. Describe the operator as an abstract mapping over mathematical domains, codomains, tensor indices, broadcasting relations, reductions, or shape transforms as applicable, independent of NPU implementation.
 - Make functional, numeric, and shape semantics testable.
+- In `Shape Semantics / Shape 语义`, keep the section heading unchanged and do not add subsection headings. Directly include prose shape rules followed by a `python` fenced code block that implements NumPy-based InferShape logic.
+- The Shape Semantics InferShape code block must include `import numpy as np` and define a function whose name and parameter list exactly match the earlier `Pure Python Signature`.
+- The InferShape function must include a complete docstring documenting its shape-inference purpose, every parameter, the return shape contract, unsupported/error cases, and shape-rule notes.
+- Keep the InferShape implementation simple and efficient. Prefer an ordered table of shape rules rather than deeply nested ad hoc conditionals, and return only shape metadata rather than computed tensor values.
 - Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish the behavior, list it in `Open Issues / 待确认问题`.
 - Preserve PRD constraints unless the review explicitly corrects them.
 - Use measurable performance requirements only when the PRD provides them. Otherwise state that no additional performance requirement is specified by the PRD.

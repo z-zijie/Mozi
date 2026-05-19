@@ -62,7 +62,7 @@ If plugin hooks are disabled, unavailable, or not trusted, final SPECs can be ch
 python3 plugins/mozi/skills/create-spec/scripts/validate_spec.py docs/mozi/<op-name-kebab-case>/spec.md --operator <OP_NAME>
 ```
 
-The SPEC validator requires the rendered or revised SPEC to keep the template headings, include the required Operator Interface subsections and ATen/Python/C++ signature code blocks, use framework-independent Pure C++ signature types, document every Python/C++ signature parameter inside the Python docstring and C++ Doxygen comment, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open issues.
+The SPEC validator requires the rendered or revised SPEC to keep the template headings, include the required Operator Interface subsections and ATen/Python/C++ signature code blocks, use framework-independent Pure C++ signature types, document every Python/C++ signature parameter inside the Python docstring and C++ Doxygen comment, include direct Shape Semantics content with a NumPy InferShape code block whose function name and parameters match the Pure Python Signature and whose docstring documents every parameter and return shape contract, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open issues.
 
 ## Installation
 
