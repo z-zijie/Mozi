@@ -16,7 +16,7 @@ Specify the target NPU platform scope and any platform-level compatibility const
 {{SUPPORTED_PLATFORMS}}
 
 ## 4. Operator Interface / 算子接口
-Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature, and a framework-independent pure C++ function signature. Each parameter must be accompanied by a precise semantic specification, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant.
+Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature with docstring, and a framework-independent pure C++ function signature with Doxygen documentation. The interface definitions are the documentation: every Python/C++ parameter must be documented in the signature block itself, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant.
 
 {{OPERATOR_INTERFACE}}
 

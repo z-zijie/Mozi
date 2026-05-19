@@ -30,13 +30,12 @@ REQUIRED_OPERATOR_HEADINGS = (
 )
 OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = (
-    "Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature, and a framework-independent pure C++ function signature. Each parameter must be accompanied by a precise semantic specification, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant."
+    "Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature with docstring, and a framework-independent pure C++ function signature with Doxygen documentation. The interface definitions are the documentation: every Python/C++ parameter must be documented in the signature block itself, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant."
 )
 REQUIRED_OPERATOR_INTERFACE_SUBSECTIONS = (
     "### PyTorch ATen IR",
     "### Pure Python Signature",
     "### Pure C++ Signature",
-    "### Parameter Documentation / 参数说明",
 )
 OPEN_ISSUES_HEADING = "## 19. Open Issues / 待确认问题"
 NO_OPEN_ISSUES_VALUES = {
@@ -56,6 +55,19 @@ CPP_SIGNATURE_RE = re.compile(
     re.DOTALL,
 )
 CPP_FORBIDDEN_NAMESPACE_RE = re.compile(r"\b(?:at|c10)::")
+PYTHON_DOCSTRING_RE = re.compile(
+    r"\bdef\s+[A-Za-z_]\w*\s*\(.*?\)\s*(?:->\s*[^:\n]+)?\s*:\s*(?P<quote>\"\"\"|''')(?P<body>.*?)(?P=quote)",
+    re.DOTALL,
+)
+PYTHON_ARGS_SECTION_RE = re.compile(
+    r"^\s*Args:\s*$"
+    r"(?P<body>.*?)"
+    r"(?=^\s*(?:Returns?|Yields?|Raises?|Semantics?|Constraints?|Notes?|Examples?):\s*$|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+PYTHON_ARG_RE = re.compile(r"^\s{4,}([A-Za-z_]\w*)\s*(?:\([^)\n]*\))?\s*:", re.MULTILINE)
+CPP_DOXYGEN_RE = re.compile(r"/\*\*(?P<body>.*?)\*/", re.DOTALL)
+CPP_PARAM_RE = re.compile(r"@param(?:\s+\[[^\]\n]+\])?\s+([A-Za-z_]\w*)\b")
 
 
 def read_text(path: Path, label: str) -> str:
@@ -191,35 +203,41 @@ def parse_cpp_params(signature_text: str) -> tuple[set[str], list[str]]:
     return params, errors
 
 
-def parse_parameter_documentation(section_text: str) -> tuple[dict[str, str], list[str]]:
+def parse_python_documented_params(signature_text: str) -> tuple[set[str], list[str]]:
     errors: list[str] = []
-    lines = [line.strip() for line in section_text.splitlines() if line.strip().startswith("|")]
-    header_index = next((index for index, line in enumerate(lines) if "Parameter" in line and "Meaning" in line), None)
-    if header_index is None:
-        return {}, ["Parameter documentation must include a Markdown table with Parameter and Meaning columns"]
+    docstring_match = PYTHON_DOCSTRING_RE.search(signature_text)
+    if not docstring_match:
+        return set(), ["Pure Python Signature must include a function docstring"]
 
-    header_cells = [cell.strip().lower() for cell in lines[header_index].strip("|").split("|")]
-    try:
-        parameter_index = header_cells.index("parameter")
-        meaning_index = header_cells.index("meaning")
-    except ValueError:
-        return {}, ["Parameter documentation table must include Parameter and Meaning columns"]
+    docstring = docstring_match.group("body")
+    if "Returns:" not in docstring:
+        errors.append("Pure Python docstring must include a Returns section")
+    if "Args:" not in docstring:
+        return set(), errors + ["Pure Python docstring must include an Args section"]
 
-    documented: dict[str, str] = {}
-    for line in lines[header_index + 1 :]:
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
-            continue
-        if len(cells) <= max(parameter_index, meaning_index):
-            errors.append(f"Parameter documentation row has too few columns: {line}")
-            continue
-        parameter = cells[parameter_index]
-        meaning = cells[meaning_index]
-        if not re.fullmatch(r"[A-Za-z_]\w*", parameter):
-            errors.append(f"Invalid documented parameter name: {parameter}")
-            continue
-        documented[parameter] = meaning
+    args_match = PYTHON_ARGS_SECTION_RE.search(docstring)
+    if not args_match:
+        return set(), errors + ["Pure Python docstring Args section must include parameter entries"]
 
+    documented = set(PYTHON_ARG_RE.findall(args_match.group("body")))
+    if not documented:
+        errors.append("Pure Python docstring Args section must include parameter entries")
+    return documented, errors
+
+
+def parse_cpp_documented_params(signature_text: str) -> tuple[set[str], list[str]]:
+    errors: list[str] = []
+    comment_match = CPP_DOXYGEN_RE.search(signature_text)
+    if not comment_match:
+        return set(), ["Pure C++ Signature must include a Doxygen comment"]
+
+    comment = comment_match.group("body")
+    if "@brief" not in comment:
+        errors.append("Pure C++ Doxygen comment must include @brief")
+    if "@return" not in comment:
+        errors.append("Pure C++ Doxygen comment must include @return")
+
+    documented = set(CPP_PARAM_RE.findall(comment))
     return documented, errors
 
 
@@ -247,6 +265,11 @@ def validate_operator_interface(operator_interface_body: str) -> list[str]:
     else:
         python_params, python_errors = parse_python_params(python_block)
         errors.extend(python_errors)
+        documented_python_params, python_doc_errors = parse_python_documented_params(python_block)
+        errors.extend(python_doc_errors)
+        missing_python_docs = sorted(param for param in python_params if param not in documented_python_params)
+        if missing_python_docs:
+            errors.append("Pure Python docstring Args section is missing parameters: " + ", ".join(missing_python_docs))
 
     cpp_block = extract_fenced_block(h3_sections.get("### Pure C++ Signature", ""), "cpp")
     cpp_params: set[str] = set()
@@ -255,24 +278,11 @@ def validate_operator_interface(operator_interface_body: str) -> list[str]:
     else:
         cpp_params, cpp_errors = parse_cpp_params(cpp_block)
         errors.extend(cpp_errors)
-
-    documented_params, documentation_errors = parse_parameter_documentation(
-        h3_sections.get("### Parameter Documentation / 参数说明", "")
-    )
-    errors.extend(documentation_errors)
-
-    signature_params = python_params | cpp_params
-    missing_docs = sorted(param for param in signature_params if param not in documented_params)
-    if missing_docs:
-        errors.append("Parameter documentation is missing parameters: " + ", ".join(missing_docs))
-
-    empty_meaning = sorted(
-        parameter
-        for parameter, meaning in documented_params.items()
-        if not meaning or meaning.lower() in {"-", "n/a", "none", "tbd"}
-    )
-    if empty_meaning:
-        errors.append("Parameter documentation has empty Meaning values: " + ", ".join(empty_meaning))
+        documented_cpp_params, cpp_doc_errors = parse_cpp_documented_params(cpp_block)
+        errors.extend(cpp_doc_errors)
+        missing_cpp_docs = sorted(param for param in cpp_params if param not in documented_cpp_params)
+        if missing_cpp_docs:
+            errors.append("Pure C++ Doxygen @param documentation is missing parameters: " + ", ".join(missing_cpp_docs))
 
     if python_params and cpp_params and python_params != cpp_params:
         only_python = sorted(python_params - cpp_params)
