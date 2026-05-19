@@ -1,7 +1,7 @@
 {
   "name": "mozi",
   "version": "0.1.0",
-  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation.",
+  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation and review.",
   "author": {
     "name": "z-zijie",
     "email": "z-zijie@users.noreply.github.com",
@@ -20,21 +20,25 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Mozi",
-    "shortDescription": "Generate normalized operator PRDs for NPU harness work.",
-    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflow provides $mozi:create-prd to generate a normalized operator PRD from a brief user prompt.",
+    "shortDescription": "Generate and review operator PRDs for NPU harness work.",
+    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflows provide $mozi:create-prd to generate a normalized operator PRD from a brief user prompt and $mozi:review-prd to score a PRD for SPEC readiness.",
     "developerName": "z-zijie",
     "category": "Productivity",
     "capabilities": [
       "NPU operator harness",
-      "Operator PRD generation"
+      "Operator PRD generation",
+      "Operator PRD review",
+      "SPEC readiness scoring"
     ],
     "websiteURL": "https://github.com/z-zijie/Mozi",
     "privacyPolicyURL": "https://github.com/z-zijie/Mozi",
     "termsOfServiceURL": "https://github.com/z-zijie/Mozi",
     "defaultPrompt": [
       "Use $mozi:create-prd to generate a PRD for AddRelu.",
+      "Use $mozi:review-prd with an absolute PRD path to score whether the PRD is ready for SPEC.",
       "Create a normalized operator PRD from a brief prompt.",
-      "Prepare a structured PRD document for a new NPU operator."
+      "Prepare a structured PRD document for a new NPU operator.",
+      "Review an operator PRD and return a YAML SPEC readiness decision."
     ],
     "brandColor": "#2563EB"
   }

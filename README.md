@@ -14,7 +14,17 @@ Final PRDs can be checked with the strict completeness validator:
 python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
 ```
 
+When `$mozi:create-prd` runs from an installed plugin in a target repository that does not contain the Mozi source tree, the workflow uses the bundled validator from the active skill directory instead of requiring `plugins/mozi/` in that target repository.
+
 The validator requires the rendered PRD to keep the template headings, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open questions.
+
+Invoke `$mozi:review-prd <absolute-prd-path>` to review an existing operator PRD before the SPEC stage. The workflow reads exactly one absolute PRD path, scores the document with a 100-point rubric, applies hard SPEC-entry gates, and outputs YAML only for CI or agent workflows.
+
+Review output includes the total score, rating, per-dimension scores, strengths, issues, blocking issues, improvement suggestions, and a `spec_ready` decision. The bundled validator checks the YAML contract:
+
+```bash
+python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-yaml-file> --prd-path <absolute-prd-path>
+```
 
 ## Installation
 

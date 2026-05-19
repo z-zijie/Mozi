@@ -46,10 +46,20 @@ The generated PRD should be implementation-oriented and easy for an operator-dev
 
 ## Validation
 
-After writing the PRD, run the completeness validator from the repository root:
+After writing the PRD, run the completeness validator before reporting success.
+
+First resolve the target repository root. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
+
+When working in the Mozi plugin repository, prefer the repo-local validator from the repository root:
 
 ```bash
 python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
+```
+
+When using an installed Mozi plugin in a target repository that does not contain the plugin source tree at `plugins/mozi/`, run the bundled validator from this skill directory instead:
+
+```bash
+python3 <this-skill-dir>/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
 ```
 
 If validation fails, keep the generated PRD file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open questions make the PRD incomplete.

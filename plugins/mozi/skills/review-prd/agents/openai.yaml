@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Operator PRD"
+  short_description: "Score a Mozi operator PRD before SPEC"
+  default_prompt: "Use $mozi:review-prd with an absolute PRD path to score whether the PRD is ready for SPEC."
