@@ -19,7 +19,7 @@
   "mcpServers": "[TODO: ./.mcp.json]",
   "apps": "[TODO: ./.app.json]",
   "interface": {
-    "displayName": "[TODO: Plugin Display Name]",
+    "displayName": "mozi",
     "shortDescription": "[TODO: Short description for subtitle]",
     "longDescription": "[TODO: Long description for details page]",
     "developerName": "[TODO: OpenAI]",
