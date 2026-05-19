@@ -92,7 +92,36 @@ Specify measurable performance requirements or state that no additional performa
 {{PERFORMANCE_REQUIREMENTS}}
 
 ## 18. Acceptance Criteria / 验收标准
-Specify verifiable criteria for functional correctness, numeric conformance, shape inference, dtype coverage, error handling, and documentation completeness.
+Specify verifiable criteria for functional correctness, numeric conformance, shape inference, dtype coverage, error handling, and documentation completeness. Include all required subsections:
+
+### Numerical Analysis / 数值分析
+Provide prose derived from `Mathematical Semantics / 数学语义` and `Functional Semantics / 功能语义`. Explain which operations are exact, rounded, saturated, clipped, nondeterministic, or tolerance-sensitive, and connect those observations to the precision scenarios below.
+
+### Precision Standards / 精度标准
+Include exactly one `yaml` fenced code block using this structure. Do not use a Markdown table.
+
+```yaml
+scenarios:
+  - name: "<scenario>"
+    condition: "<input/output condition>"
+    outputs:
+      - name: "<output>"
+        dtype: "<dtype or dtype group>"
+        atol: 0.0
+        rtol: 0.0
+        rationale: "<derived from numerical analysis>"
+```
+
+### NumPy Compare Function / NumPy 精度比对函数
+Include exactly one `python` fenced code block. The function must import or use NumPy, compare every output according to the YAML precision standards, and return a tuple of booleans aligned with output order or the output entries. Use this exact signature:
+
+```python
+from typing import Tuple
+import numpy as np
+
+def compare(actual_outputs, expected_outputs) -> Tuple[bool]:
+    return (bool(np.allclose(actual_outputs[0], expected_outputs[0], atol=0.0, rtol=0.0)),)
+```
 
 {{ACCEPTANCE_CRITERIA}}
 

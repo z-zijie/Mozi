@@ -51,7 +51,7 @@ Tensor add_relu(Tensor x, Tensor bias);
 `x` is a `float16` or `float32` tensor. `bias` is a `float16` or `float32` tensor or scalar broadcastable with `x`.
 
 ## 6. Output Specification / 输出规格
-The output is a tensor with the broadcast shape of `x` and `bias`, containing `max(x + bias, 0)` elementwise.
+The output is a tensor with the broadcast shape of `x` and `bias`, containing `max(x + bias, 0)` elementwise. The output dtype is `float16` when both inputs are `float16`; mixed `float16` and `float32` inputs promote to `float32`; two `float32` inputs produce `float32`.
 
 ## 7. Attribute Specification / 属性规格
 AddRelu has no attributes.
@@ -62,8 +62,60 @@ Let \(X \in D^{S_x}\) and \(B \in D^{S_b}\), where \(D \subset \mathbb{R}\) is t
 ## 9. Functional Semantics / 功能语义
 The observable behavior is equivalent to applying addition after broadcasting and then applying ReLU elementwise.
 
+### NumPy Reference Function
+
+```python
+import numpy as np
+
+def add_relu(x, bias):
+    """Compute the AddRelu behavioral reference.
+
+    Args:
+        x: Floating NumPy-compatible tensor supplying the primary values.
+        bias: Floating NumPy-compatible tensor or scalar broadcastable with x.
+
+    Returns:
+        NumPy array containing max(x + bias, 0) with the promoted supported dtype.
+
+    Raises:
+        TypeError: If x or bias has an unsupported non-floating dtype.
+        ValueError: If x and bias are not broadcast-compatible.
+
+    Notes:
+        This executable reference defines functional behavior only and does not imply an implementation strategy.
+    """
+    x_array = np.asarray(x)
+    bias_array = np.asarray(bias)
+    supported = {np.dtype("float16"), np.dtype("float32")}
+    if x_array.dtype not in supported or bias_array.dtype not in supported:
+        raise TypeError("AddRelu supports float16 and float32 inputs only")
+    result_dtype = np.result_type(x_array.dtype, bias_array.dtype)
+    if result_dtype not in supported:
+        result_dtype = np.dtype("float32")
+    summed = np.add(x_array.astype(result_dtype), bias_array.astype(result_dtype))
+    return np.maximum(summed, np.array(0, dtype=result_dtype)).astype(result_dtype)
+```
+
+### Pure C++17 Reference Function
+
+```cpp
+/**
+ * @brief Compute the AddRelu behavioral reference.
+ *
+ * @param x Floating tensor providing primary values.
+ * @param bias Floating tensor or scalar broadcastable with x.
+ * @return Tensor containing max(x + bias, 0) with the promoted supported dtype.
+ */
+Tensor add_relu(Tensor x, Tensor bias) {
+    Tensor broadcasted_x = broadcast_to_result_shape(x, bias);
+    Tensor broadcasted_bias = broadcast_to_result_shape(bias, x);
+    Tensor summed = elementwise_add_with_supported_float_promotion(broadcasted_x, broadcasted_bias);
+    return elementwise_max(summed, 0.0);
+}
+```
+
 ## 10. Numeric Semantics / 数值语义
-For finite supported floating inputs, each output element equals the reference expression within the validation tolerance for the dtype.
+For finite supported floating inputs, each output element equals the reference expression within the validation tolerance for the dtype. Addition and ReLU use the promoted supported floating dtype. NaN, Inf, and signed-zero behavior follows the reference framework expression `torch.relu(torch.add(x, bias))` when such values are supplied.
 
 ## 11. Shape Semantics / Shape 语义
 The output shape is the NumPy broadcast shape of `x` and `bias`.
@@ -132,7 +184,7 @@ def add_relu(x, bias):
 The PRD does not establish additional layout constraints beyond supported tensor compatibility.
 
 ## 14. Boundary Cases / 边界场景
-Empty tensors follow broadcast shape inference. Scalar bias broadcasts to `x`. Unsupported non-floating dtypes are rejected.
+Empty tensors follow broadcast shape inference and produce empty outputs with the broadcast shape. Scalar bias broadcasts to `x`. Unsupported non-floating dtypes are rejected before computing output values.
 
 ## 15. Error Handling / 错误处理
 Reject non-broadcastable shapes and unsupported dtype combinations with clear diagnostics.
@@ -144,7 +196,62 @@ Behavior is compatible with the reference expression `torch.relu(torch.add(x, bi
 No additional performance requirement is specified by the PRD.
 
 ## 18. Acceptance Criteria / 验收标准
-Validation covers same-shape float32 inputs, scalar float16 bias, broadcast-compatible tensor bias, empty tensors, unsupported dtype rejection, shape inference, dtype inference, and documentation completeness.
+### Numerical Analysis / 数值分析
+AddRelu has one arithmetic addition followed by an exact ReLU clamp in the promoted supported floating dtype. For `float32` outputs, validation compares against the NumPy reference with `1e-6` absolute and relative tolerance to cover normal floating addition rounding. For `float16` outputs, validation uses `1e-3` absolute and relative tolerance to cover half-precision rounding. Empty outputs require shape and dtype agreement and have no elementwise numeric error.
+
+### Precision Standards / 精度标准
+
+```yaml
+scenarios:
+  - name: "float32 same-shape and broadcast tensor"
+    condition: "x and bias are float32 tensors with equal or broadcast-compatible shapes"
+    outputs:
+      - name: "y"
+        dtype: "float32"
+        atol: 1.0e-6
+        rtol: 1.0e-6
+        rationale: "float32 addition may round once before the exact ReLU clamp"
+  - name: "float16 scalar or tensor bias"
+    condition: "x and bias are float16 values, including scalar bias"
+    outputs:
+      - name: "y"
+        dtype: "float16"
+        atol: 1.0e-3
+        rtol: 1.0e-3
+        rationale: "float16 addition and output storage have half-precision rounding"
+  - name: "empty broadcast-compatible tensors"
+    condition: "broadcast output has at least one zero-sized dimension"
+    outputs:
+      - name: "y"
+        dtype: "float16 or float32"
+        atol: 0.0
+        rtol: 0.0
+        rationale: "empty outputs are validated by shape and dtype because no elements are compared"
+```
+
+### NumPy Compare Function / NumPy 精度比对函数
+
+```python
+from typing import Tuple
+import numpy as np
+
+def compare(actual_outputs, expected_outputs) -> Tuple[bool]:
+    actual = actual_outputs[0] if isinstance(actual_outputs, (list, tuple)) else actual_outputs
+    expected = expected_outputs[0] if isinstance(expected_outputs, (list, tuple)) else expected_outputs
+    actual_array = np.asarray(actual)
+    expected_array = np.asarray(expected)
+    if actual_array.shape != expected_array.shape or actual_array.dtype != expected_array.dtype:
+        return (False,)
+    if actual_array.size == 0:
+        return (True,)
+    if actual_array.dtype == np.dtype("float16"):
+        atol = 1.0e-3
+        rtol = 1.0e-3
+    else:
+        atol = 1.0e-6
+        rtol = 1.0e-6
+    return (bool(np.allclose(actual_array, expected_array, atol=atol, rtol=rtol, equal_nan=True)),)
+```
 
 ## 19. Open Issues / 待确认问题
 None

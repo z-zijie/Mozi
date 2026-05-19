@@ -32,6 +32,7 @@ OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
 FUNCTIONAL_SEMANTICS_HEADING = "## 9. Functional Semantics / 功能语义"
 SHAPE_SEMANTICS_HEADING = "## 11. Shape Semantics / Shape 语义"
 DATA_TYPE_SUPPORT_HEADING = "## 12. Data Type Support / 数据类型支持"
+ACCEPTANCE_CRITERIA_HEADING = "## 18. Acceptance Criteria / 验收标准"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = (
     "Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature with docstring, and a framework-independent pure C++ function signature with Doxygen documentation. The interface definitions are the documentation: every Python/C++ parameter must be documented in the signature block itself, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant."
 )
@@ -88,6 +89,8 @@ TABLE_RULES_ASSIGNMENT_RE = re.compile(
     r"^\s*[A-Za-z_]\w*(?:_?(?:table|rules))\s*(?::[^=\n]+)?=\s*(?:\{|\[|\()",
     re.MULTILINE,
 )
+MARKDOWN_TABLE_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
+NUMERIC_LITERAL_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$")
 
 
 def read_text(path: Path, label: str) -> str:
@@ -143,6 +146,11 @@ def extract_fenced_block(section_text: str, language: str) -> str | None:
     if not match:
         return None
     return match.group(1).strip()
+
+
+def extract_fenced_blocks(section_text: str, language: str) -> list[str]:
+    pattern = re.compile(FENCE_RE_TEMPLATE.format(language=re.escape(language)), re.DOTALL)
+    return [match.group(1).strip() for match in pattern.finditer(section_text)]
 
 
 def split_params(params_text: str) -> list[str]:
@@ -626,6 +634,211 @@ def validate_data_type_support(dtype_body: str, operator_python_block: str | Non
     return errors
 
 
+def parse_yaml_scalar(raw_value: str) -> str:
+    value = raw_value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    return value
+
+
+def parse_yaml_key_value(text: str, label: str) -> tuple[str | None, str | None, str | None]:
+    if ":" not in text:
+        return None, None, f"{label} must use 'key: value' entries"
+    key, raw_value = text.split(":", 1)
+    key = key.strip()
+    if not re.fullmatch(r"[A-Za-z_]\w*", key):
+        return None, None, f"{label} has invalid key: {key or text}"
+    return key, parse_yaml_scalar(raw_value), None
+
+
+def parse_precision_yaml(yaml_text: str) -> tuple[list[dict[str, object]], list[str]]:
+    errors: list[str] = []
+    scenarios: list[dict[str, object]] = []
+    current_scenario: dict[str, object] | None = None
+    current_output: dict[str, object] | None = None
+    seen_top_level = False
+    in_outputs = False
+
+    content_lines = [
+        line.rstrip()
+        for line in yaml_text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not content_lines:
+        return [], ["Precision Standards YAML block must not be empty"]
+
+    for line_number, line in enumerate(content_lines, start=1):
+        indent = len(line) - len(line.lstrip(" "))
+        stripped = line.strip()
+
+        if indent == 0:
+            if stripped != "scenarios:":
+                errors.append(f"Precision Standards YAML line {line_number} must be top-level 'scenarios:'")
+            elif seen_top_level:
+                errors.append("Precision Standards YAML must contain exactly one top-level scenarios key")
+            seen_top_level = True
+            current_scenario = None
+            current_output = None
+            in_outputs = False
+            continue
+
+        if not seen_top_level:
+            errors.append("Precision Standards YAML must start with top-level scenarios key")
+            continue
+
+        if stripped.startswith("- "):
+            item_text = stripped[2:].strip()
+            key: str | None = None
+            value: str | None = None
+            if item_text:
+                key, value, key_error = parse_yaml_key_value(item_text, f"Precision Standards YAML line {line_number}")
+                if key_error:
+                    errors.append(key_error)
+                    continue
+
+            if indent == 2:
+                current_scenario = {"outputs": []}
+                scenarios.append(current_scenario)
+                current_output = None
+                in_outputs = False
+                if key:
+                    current_scenario[key] = value or ""
+            elif indent == 6 and current_scenario is not None and in_outputs:
+                current_output = {}
+                outputs = current_scenario.setdefault("outputs", [])
+                if isinstance(outputs, list):
+                    outputs.append(current_output)
+                if key:
+                    current_output[key] = value or ""
+            else:
+                errors.append(f"Precision Standards YAML line {line_number} has invalid list indentation")
+            continue
+
+        key, value, key_error = parse_yaml_key_value(stripped, f"Precision Standards YAML line {line_number}")
+        if key_error:
+            errors.append(key_error)
+            continue
+
+        if indent == 4 and current_scenario is not None:
+            if key == "outputs":
+                current_scenario.setdefault("outputs", [])
+                in_outputs = True
+                current_output = None
+                if value:
+                    errors.append("Precision Standards scenario outputs must be a nested non-empty list")
+            else:
+                current_scenario[key] = value or ""
+                in_outputs = False
+        elif indent == 8 and current_output is not None:
+            current_output[key] = value or ""
+        else:
+            errors.append(f"Precision Standards YAML line {line_number} has invalid indentation")
+
+    if not seen_top_level:
+        errors.append("Precision Standards YAML must include top-level scenarios key")
+    return scenarios, errors
+
+
+def validate_precision_yaml(yaml_text: str) -> list[str]:
+    errors: list[str] = []
+    if MARKDOWN_TABLE_RE.search(yaml_text):
+        errors.append("Precision Standards must use YAML entries, not Markdown table syntax")
+
+    scenarios, parse_errors = parse_precision_yaml(yaml_text)
+    errors.extend(parse_errors)
+    if parse_errors:
+        return errors
+
+    if not scenarios:
+        errors.append("Precision Standards scenarios must be a non-empty list")
+        return errors
+
+    required_scenario_keys = ("name", "condition", "outputs")
+    required_output_keys = ("name", "dtype", "atol", "rtol", "rationale")
+    for scenario_index, scenario in enumerate(scenarios, start=1):
+        for key in required_scenario_keys:
+            if key not in scenario:
+                errors.append(f"Precision Standards scenario {scenario_index} is missing {key}")
+        for key in ("name", "condition"):
+            if not str(scenario.get(key, "")).strip():
+                errors.append(f"Precision Standards scenario {scenario_index} has empty {key}")
+        outputs = scenario.get("outputs")
+        if not isinstance(outputs, list) or not outputs:
+            errors.append(f"Precision Standards scenario {scenario_index} outputs must be a non-empty list")
+            continue
+        for output_index, output in enumerate(outputs, start=1):
+            if not isinstance(output, dict):
+                errors.append(f"Precision Standards scenario {scenario_index} output {output_index} must be a mapping")
+                continue
+            for key in required_output_keys:
+                if key not in output:
+                    errors.append(f"Precision Standards scenario {scenario_index} output {output_index} is missing {key}")
+            for key in ("name", "dtype", "rationale"):
+                if not str(output.get(key, "")).strip():
+                    errors.append(f"Precision Standards scenario {scenario_index} output {output_index} has empty {key}")
+            for key in ("atol", "rtol"):
+                value = str(output.get(key, "")).strip()
+                if not NUMERIC_LITERAL_RE.fullmatch(value):
+                    errors.append(
+                        f"Precision Standards scenario {scenario_index} output {output_index} {key} must be numeric"
+                    )
+
+    return errors
+
+
+def validate_acceptance_criteria(acceptance_body: str) -> list[str]:
+    errors: list[str] = []
+    h3_sections = extract_h3_sections(acceptance_body)
+    required_subsections = (
+        "### Numerical Analysis / 数值分析",
+        "### Precision Standards / 精度标准",
+        "### NumPy Compare Function / NumPy 精度比对函数",
+    )
+    for subsection in required_subsections:
+        if subsection not in h3_sections:
+            errors.append(f"Acceptance Criteria section is missing subsection: {subsection}")
+
+    numerical_body = h3_sections.get("### Numerical Analysis / 数值分析", "").strip()
+    if not numerical_body:
+        errors.append("Acceptance Criteria Numerical Analysis subsection must include prose")
+    elif "```" in numerical_body:
+        errors.append("Acceptance Criteria Numerical Analysis subsection must be prose, not code only")
+
+    precision_body = h3_sections.get("### Precision Standards / 精度标准", "")
+    if MARKDOWN_TABLE_RE.search(precision_body):
+        errors.append("Acceptance Criteria Precision Standards subsection must not use Markdown table syntax")
+    yaml_blocks = extract_fenced_blocks(precision_body, "yaml")
+    if len(yaml_blocks) != 1:
+        errors.append("Acceptance Criteria Precision Standards subsection must include exactly one yaml fenced code block")
+    else:
+        errors.extend(validate_precision_yaml(yaml_blocks[0]))
+
+    compare_body = h3_sections.get("### NumPy Compare Function / NumPy 精度比对函数", "")
+    python_blocks = extract_fenced_blocks(compare_body, "python")
+    if len(python_blocks) != 1:
+        errors.append("Acceptance Criteria NumPy Compare Function subsection must include exactly one python fenced code block")
+    else:
+        compare_block = python_blocks[0]
+        if "acutal_outputs" in compare_block:
+            errors.append("Acceptance Criteria compare function must not use misspelled acutal_outputs")
+        compare_signature, compare_signature_errors = normalize_python_signature(
+            compare_block,
+            "Acceptance Criteria NumPy Compare Function",
+        )
+        errors.extend(compare_signature_errors)
+        if not compare_signature_errors and compare_signature != "def compare(actual_outputs,expected_outputs)->Tuple[bool]":
+            errors.append(
+                "Acceptance Criteria NumPy Compare Function signature must be "
+                "def compare(actual_outputs, expected_outputs) -> Tuple[bool]"
+            )
+        if not NUMPY_IMPORT_RE.search(compare_block) and not re.search(r"\bnp\.", compare_block):
+            errors.append("Acceptance Criteria NumPy Compare Function must import or use NumPy")
+        if not RETURN_RE.search(compare_block):
+            errors.append("Acceptance Criteria NumPy Compare Function must include a return statement")
+
+    return errors
+
+
 def infer_operator(spec_text: str) -> str | None:
     match = H1_RE.search(spec_text)
     return match.group(1) if match else None
@@ -723,6 +936,10 @@ def validate(spec_path: Path, template_path: Path, expected_operator: str | None
                 extract_operator_python_block(operator_interface_body),
             )
         )
+
+    acceptance_criteria_body = sections.get(ACCEPTANCE_CRITERIA_HEADING, "").strip()
+    if acceptance_criteria_body:
+        errors.extend(validate_acceptance_criteria(acceptance_criteria_body))
 
     open_issues = strip_template_guidance(
         sections.get(OPEN_ISSUES_HEADING, "").strip(),

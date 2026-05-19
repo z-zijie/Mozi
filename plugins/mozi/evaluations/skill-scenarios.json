@@ -112,6 +112,7 @@
       "expected_behavior": [
         "Reads the PRD as source of truth and creates the sibling spec.md only if no overwrite confirmation is required.",
         "Uses canonical SPEC headings and required interface, math, shape, and dtype sections.",
+        "Writes Acceptance Criteria with numerical analysis, YAML precision standards, and the exact NumPy compare function signature.",
         "Writes None for Open Issues when all required information is supplied.",
         "Runs validate_spec.py manually before reporting success."
       ]
@@ -143,6 +144,7 @@
         "Uses revision mode and modifies the provided SPEC path only.",
         "Preserves the PRD as requirement source of truth.",
         "Applies only SPEC-level review feedback.",
+        "Preserves or restores Acceptance Criteria subsections, scenario-to-output YAML precision standards, and the exact NumPy compare function signature.",
         "Runs validate_spec.py manually on the modified SPEC before reporting success."
       ]
     }
