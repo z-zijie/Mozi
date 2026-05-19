@@ -48,6 +48,8 @@ The generated PRD should be implementation-oriented and easy for an operator-dev
 
 After writing the PRD, run the completeness validator before reporting success.
 
+Treat validator scripts as black-box executables. Do not read, inspect, summarize, or reason from validator source code before running validation. Only inspect validator source code when the user explicitly asks to debug or modify the validator itself.
+
 First resolve the target repository root. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
 
 When working in the Mozi plugin repository, prefer the repo-local validator from the repository root:
