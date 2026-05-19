@@ -27,6 +27,10 @@ Apply these checks before assigning high scores:
 - Operator Interface must include PyTorch ATen IR, Pure Python Signature with docstring, and framework-independent Pure C++ Signature with Doxygen.
 - Python and C++ interface documentation must describe every signature parameter directly, including role, tensor semantics, shape and dtype constraints, layout, aliasing or mutability, defaults, and optionality where relevant.
 - Mathematical Semantics must define the operator as a rigorous pure mathematical mapping using professional mathematical language and LaTeX formulas.
+- Functional Semantics must include NumPy and Pure C++17 Reference Functions as executable behavioral references.
+- The NumPy Reference Function signature must strictly match the Pure Python Signature, including function name, parameter list, defaults, annotations, and return annotation after whitespace normalization.
+- The Pure C++17 Reference Function signature must strictly match the Pure C++ Signature, including function name, return type, parameter declarations, parameter order, defaults, and qualifiers after whitespace and declaration-vs-definition normalization.
+- Functional reference functions must document every parameter and return actual computed reference outputs.
 - Shape Semantics must keep direct section content without subsection headings and include NumPy InferShape code whose function name and parameters match the Pure Python Signature.
 - InferShape must include a complete docstring documenting purpose, every parameter, return shape contract, unsupported or error cases, and shape-rule notes.
 - Data Type Support must include table-driven InferDtype code whose function name and parameters match the Pure Python Signature.
@@ -75,7 +79,7 @@ Evaluate rank, shape constraints, output shape inference, scalar tensor, empty t
 
 ### 5. semantic_precision - 15 points
 
-Evaluate mathematical semantics and numerical semantics, including rigorous pure mathematical definition, elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable.
+Evaluate mathematical, functional, and numerical semantics, including rigorous pure mathematical definition, executable NumPy and Pure C++17 behavioral reference functions with signatures matching the operator interface, elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable.
 
 - 13-15: Semantics are rigorous, unambiguous, and cover numeric edge behavior.
 - 9-12: Semantics are mostly precise with minor omissions.

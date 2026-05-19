@@ -29,6 +29,7 @@ REQUIRED_OPERATOR_HEADINGS = (
     "## 12. Data Type Support / 数据类型支持",
 )
 OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
+FUNCTIONAL_SEMANTICS_HEADING = "## 9. Functional Semantics / 功能语义"
 SHAPE_SEMANTICS_HEADING = "## 11. Shape Semantics / Shape 语义"
 DATA_TYPE_SUPPORT_HEADING = "## 12. Data Type Support / 数据类型支持"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = (
@@ -50,13 +51,19 @@ NO_OPEN_ISSUES_VALUES = {
 H3_RE = re.compile(r"^### .+$", re.MULTILINE)
 FENCE_RE_TEMPLATE = r"```{language}\s*\n(.*?)\n```"
 PYTHON_SIGNATURE_RE = re.compile(
-    r"\bdef\s+(?P<name>[A-Za-z_]\w*)\s*\((?P<params>.*?)\)\s*(?:->\s*[^:\n]+)?\s*:",
+    r"\bdef\s+(?P<name>[A-Za-z_]\w*)\s*\((?P<params>.*?)\)\s*(?:->\s*(?P<return>[^:\n]+))?\s*:",
     re.DOTALL,
 )
 CPP_SIGNATURE_RE = re.compile(
     r"(?P<return>[A-Za-z_][\w:<>,\s*&]*?)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*"
-    r"\((?P<params>.*?)\)\s*(?:const\s*)?;",
+    r"\((?P<params>.*?)\)\s*(?P<qualifiers>(?:(?:const|noexcept(?:\s*\([^)]*\))?)\s*)*);",
+    re.DOTALL,
+)
+CPP_DEFINITION_RE = re.compile(
+    r"(?P<return>[A-Za-z_][\w:<>,\s*&]*?)\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*"
+    r"\((?P<params>.*?)\)\s*(?P<qualifiers>(?:(?:const|noexcept(?:\s*\([^)]*\))?)\s*)*)\{(?P<body>.*)\}\s*$",
     re.DOTALL,
 )
 CPP_FORBIDDEN_NAMESPACE_RE = re.compile(r"\b(?:at|c10)::")
@@ -73,8 +80,10 @@ PYTHON_ARGS_SECTION_RE = re.compile(
 PYTHON_ARG_RE = re.compile(r"^\s{4,}([A-Za-z_]\w*)\s*(?:\([^)\n]*\))?\s*:", re.MULTILINE)
 CPP_DOXYGEN_RE = re.compile(r"/\*\*(?P<body>.*?)\*/", re.DOTALL)
 CPP_PARAM_RE = re.compile(r"@param(?:\s+\[[^\]\n]+\])?\s+([A-Za-z_]\w*)\b")
+CPP_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 NUMPY_IMPORT_RE = re.compile(r"^\s*import\s+numpy\s+as\s+np\s*$", re.MULTILINE)
 RETURN_RE = re.compile(r"^\s*return\b", re.MULTILINE)
+CPP_RETURN_RE = re.compile(r"\breturn\b")
 TABLE_RULES_ASSIGNMENT_RE = re.compile(
     r"^\s*[A-Za-z_]\w*(?:_?(?:table|rules))\s*(?::[^=\n]+)?=\s*(?:\{|\[|\()",
     re.MULTILINE,
@@ -162,6 +171,45 @@ def normalize_python_param(raw_param: str) -> str:
     return re.sub(r"\s+", "", raw_param.strip())
 
 
+def normalize_python_signature(signature_text: str, label: str) -> tuple[str | None, list[str]]:
+    match = PYTHON_SIGNATURE_RE.search(signature_text)
+    if not match:
+        return None, [f"{label} must contain a def function signature"]
+    params = ",".join(normalize_python_param(raw_param) for raw_param in split_params(match.group("params")))
+    return_annotation = re.sub(r"\s+", "", (match.group("return") or "").strip())
+    normalized = f"def {match.group('name')}({params})->{return_annotation}"
+    return normalized, []
+
+
+def normalize_cpp_signature_match(match: re.Match[str]) -> str:
+    return_type = re.sub(r"\s+", "", match.group("return").strip())
+    params = ",".join(re.sub(r"\s+", "", raw_param.strip()) for raw_param in split_params(match.group("params")))
+    qualifiers = re.sub(r"\s+", "", (match.group("qualifiers") or "").strip())
+    return f"{return_type} {match.group('name')}({params}) {qualifiers}".strip()
+
+
+def strip_cpp_block_comments(signature_text: str) -> str:
+    return CPP_BLOCK_COMMENT_RE.sub("", signature_text)
+
+
+def normalize_cpp_declaration(signature_text: str, label: str) -> tuple[str | None, list[str]]:
+    if CPP_FORBIDDEN_NAMESPACE_RE.search(signature_text):
+        return None, [f"{label} must use framework-independent types, not at:: or c10:: namespaces"]
+    match = CPP_SIGNATURE_RE.search(strip_cpp_block_comments(signature_text))
+    if not match:
+        return None, [f"{label} must contain a function declaration ending with semicolon"]
+    return normalize_cpp_signature_match(match), []
+
+
+def normalize_cpp_definition(signature_text: str, label: str) -> tuple[str | None, str | None, list[str]]:
+    if CPP_FORBIDDEN_NAMESPACE_RE.search(signature_text):
+        return None, None, [f"{label} must use framework-independent types, not at:: or c10:: namespaces"]
+    match = CPP_DEFINITION_RE.search(strip_cpp_block_comments(signature_text))
+    if not match:
+        return None, None, [f"{label} must contain a function definition with a body"]
+    return normalize_cpp_signature_match(match), match.group("body"), []
+
+
 def parse_python_signature_details(
     signature_text: str,
     label: str,
@@ -199,16 +247,9 @@ def parse_python_params(signature_text: str) -> tuple[set[str], list[str]]:
     return set(params), errors
 
 
-def parse_cpp_params(signature_text: str) -> tuple[set[str], list[str]]:
+def parse_cpp_params_text(params_text: str, label: str) -> tuple[set[str], list[str]]:
     errors: list[str] = []
-    if CPP_FORBIDDEN_NAMESPACE_RE.search(signature_text):
-        errors.append("Pure C++ signature must use framework-independent types, not at:: or c10:: namespaces")
-
-    match = CPP_SIGNATURE_RE.search(signature_text)
-    if not match:
-        return set(), errors + ["Pure C++ signature must contain a function declaration ending with semicolon"]
-
-    params_text = match.group("params").strip()
+    params_text = params_text.strip()
     if params_text in {"", "void"}:
         return set(), errors
 
@@ -218,19 +259,50 @@ def parse_cpp_params(signature_text: str) -> tuple[set[str], list[str]]:
         if not param or param == "void":
             continue
         if "..." in param:
-            errors.append(f"Pure C++ signature uses unsupported variadic parameter: {raw_param}")
+            errors.append(f"{label} uses unsupported variadic parameter: {raw_param}")
             continue
         name_match = re.search(r"([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?$", param)
         if not name_match:
-            errors.append(f"Cannot parse Pure C++ parameter name from: {raw_param}")
+            errors.append(f"Cannot parse {label} parameter name from: {raw_param}")
             continue
         name = name_match.group(1)
         type_text = param[: name_match.start(1)].strip()
         if not type_text:
-            errors.append(f"Pure C++ parameter is missing a type: {raw_param}")
+            errors.append(f"{label} parameter is missing a type: {raw_param}")
             continue
         params.add(name)
     return params, errors
+
+
+def parse_cpp_params(signature_text: str) -> tuple[set[str], list[str]]:
+    errors: list[str] = []
+    if CPP_FORBIDDEN_NAMESPACE_RE.search(signature_text):
+        errors.append("Pure C++ signature must use framework-independent types, not at:: or c10:: namespaces")
+
+    match = CPP_SIGNATURE_RE.search(strip_cpp_block_comments(signature_text))
+    if not match:
+        return set(), errors + ["Pure C++ signature must contain a function declaration ending with semicolon"]
+
+    params, param_errors = parse_cpp_params_text(match.group("params"), "Pure C++ signature")
+    return params, errors + param_errors
+
+
+def parse_cpp_definition_params(signature_text: str) -> tuple[set[str], list[str]]:
+    errors: list[str] = []
+    if CPP_FORBIDDEN_NAMESPACE_RE.search(signature_text):
+        errors.append(
+            "Functional Semantics Pure C++17 Reference Function must use framework-independent types, not at:: or c10:: namespaces"
+        )
+
+    match = CPP_DEFINITION_RE.search(strip_cpp_block_comments(signature_text))
+    if not match:
+        return set(), errors + ["Functional Semantics Pure C++17 Reference Function must contain a function definition with a body"]
+
+    params, param_errors = parse_cpp_params_text(
+        match.group("params"),
+        "Functional Semantics Pure C++17 Reference Function",
+    )
+    return params, errors + param_errors
 
 
 def parse_python_documented_params(signature_text: str) -> tuple[set[str], list[str]]:
@@ -328,6 +400,112 @@ def validate_operator_interface(operator_interface_body: str) -> list[str]:
 def extract_operator_python_block(operator_interface_body: str) -> str | None:
     h3_sections = extract_h3_sections(operator_interface_body)
     return extract_fenced_block(h3_sections.get("### Pure Python Signature", ""), "python")
+
+
+def extract_operator_cpp_block(operator_interface_body: str) -> str | None:
+    h3_sections = extract_h3_sections(operator_interface_body)
+    return extract_fenced_block(h3_sections.get("### Pure C++ Signature", ""), "cpp")
+
+
+def validate_functional_semantics(
+    functional_body: str,
+    operator_python_block: str | None,
+    operator_cpp_block: str | None,
+) -> list[str]:
+    errors: list[str] = []
+    h3_sections = extract_h3_sections(functional_body)
+    required_subsections = (
+        "### NumPy Reference Function",
+        "### Pure C++17 Reference Function",
+    )
+    for subsection in required_subsections:
+        if subsection not in h3_sections:
+            errors.append(f"Functional Semantics section is missing subsection: {subsection}")
+
+    numpy_block = extract_fenced_block(h3_sections.get("### NumPy Reference Function", ""), "python")
+    if not numpy_block:
+        errors.append("Functional Semantics NumPy Reference Function must include a python fenced code block")
+    else:
+        if not NUMPY_IMPORT_RE.search(numpy_block):
+            errors.append("Functional Semantics NumPy Reference Function must include 'import numpy as np'")
+
+        numpy_signature, numpy_signature_errors = normalize_python_signature(
+            numpy_block,
+            "Functional Semantics NumPy Reference Function",
+        )
+        errors.extend(numpy_signature_errors)
+
+        numpy_name, numpy_params, _numpy_param_texts, numpy_parse_errors = parse_python_signature_details(
+            numpy_block,
+            "Functional Semantics NumPy Reference Function",
+        )
+        errors.extend(numpy_parse_errors)
+
+        if operator_python_block:
+            operator_signature, operator_signature_errors = normalize_python_signature(
+                operator_python_block,
+                "Pure Python Signature",
+            )
+            if not operator_signature_errors and not numpy_signature_errors and numpy_signature != operator_signature:
+                errors.append("Functional Semantics NumPy Reference Function signature must match Pure Python Signature")
+
+        documented_numpy_params, doc_errors = parse_python_documented_params(numpy_block)
+        errors.extend(
+            error.replace("Pure Python Signature", "Functional Semantics NumPy Reference Function").replace(
+                "Pure Python docstring",
+                "Functional Semantics NumPy Reference Function docstring",
+            )
+            for error in doc_errors
+        )
+        missing_numpy_docs = sorted(param for param in numpy_params if param not in documented_numpy_params)
+        if missing_numpy_docs:
+            errors.append(
+                "Functional Semantics NumPy Reference Function docstring Args section is missing parameters: "
+                + ", ".join(missing_numpy_docs)
+            )
+        if not RETURN_RE.search(numpy_block):
+            errors.append("Functional Semantics NumPy Reference Function must include a return statement")
+        if numpy_name is None:
+            errors.append("Functional Semantics NumPy Reference Function must define a named function")
+
+    cpp17_block = extract_fenced_block(h3_sections.get("### Pure C++17 Reference Function", ""), "cpp")
+    if not cpp17_block:
+        errors.append("Functional Semantics Pure C++17 Reference Function must include a cpp fenced code block")
+    else:
+        cpp17_signature, cpp17_body, cpp17_signature_errors = normalize_cpp_definition(
+            cpp17_block,
+            "Functional Semantics Pure C++17 Reference Function",
+        )
+        errors.extend(cpp17_signature_errors)
+
+        if operator_cpp_block:
+            operator_cpp_signature, operator_cpp_errors = normalize_cpp_declaration(
+                operator_cpp_block,
+                "Pure C++ Signature",
+            )
+            if not operator_cpp_errors and not cpp17_signature_errors and cpp17_signature != operator_cpp_signature:
+                errors.append("Functional Semantics Pure C++17 Reference Function signature must match Pure C++ Signature")
+
+        cpp17_params, cpp17_param_errors = parse_cpp_definition_params(cpp17_block)
+        errors.extend(cpp17_param_errors)
+        documented_cpp17_params, cpp17_doc_errors = parse_cpp_documented_params(cpp17_block)
+        errors.extend(
+            error.replace("Pure C++ Signature", "Functional Semantics Pure C++17 Reference Function").replace(
+                "Pure C++ Doxygen",
+                "Functional Semantics Pure C++17 Reference Function Doxygen",
+            )
+            for error in cpp17_doc_errors
+        )
+        missing_cpp17_docs = sorted(param for param in cpp17_params if param not in documented_cpp17_params)
+        if missing_cpp17_docs:
+            errors.append(
+                "Functional Semantics Pure C++17 Reference Function Doxygen @param documentation is missing parameters: "
+                + ", ".join(missing_cpp17_docs)
+            )
+        if cpp17_body is not None and not CPP_RETURN_RE.search(cpp17_body):
+            errors.append("Functional Semantics Pure C++17 Reference Function must include a return statement")
+
+    return errors
 
 
 def validate_shape_semantics(shape_body: str, operator_python_block: str | None) -> list[str]:
@@ -517,6 +695,16 @@ def validate(spec_path: Path, template_path: Path, expected_operator: str | None
     operator_interface_body = sections.get(OPERATOR_INTERFACE_HEADING, "").strip()
     if operator_interface_body:
         errors.extend(validate_operator_interface(operator_interface_body))
+
+    functional_semantics_body = sections.get(FUNCTIONAL_SEMANTICS_HEADING, "").strip()
+    if functional_semantics_body:
+        errors.extend(
+            validate_functional_semantics(
+                functional_semantics_body,
+                extract_operator_python_block(operator_interface_body),
+                extract_operator_cpp_block(operator_interface_body),
+            )
+        )
 
     shape_semantics_body = sections.get(SHAPE_SEMANTICS_HEADING, "").strip()
     if shape_semantics_body:

@@ -82,11 +82,11 @@ Use `template/SPEC.md.templ` in this skill directory as the SPEC structure.
 The generated SPEC should be precise enough for DESIGN and implementation work to start, but it should remain a behavioral contract rather than an implementation plan.
 
 - Define the operator interface with all required forms: PyTorch ATen IR, Pure Python `def` function signature, and framework-independent Pure C++ function signature.
-- Follow the exact operator interface, Shape Semantics, and Data Type Support instructions embedded in `template/SPEC.md.templ`; the validator enforces the required subsections, code blocks, docstrings, Doxygen comments, framework-independent C++ types, InferShape, and table-driven InferDtype.
+- Follow the exact operator interface, Functional Semantics, Shape Semantics, and Data Type Support instructions embedded in `template/SPEC.md.templ`; the validator enforces the required subsections, code blocks, docstrings, Doxygen comments, framework-independent C++ types, NumPy and Pure C++17 reference functions, InferShape, and table-driven InferDtype.
 - Split PRD-level input/output overview into exact input, output, and attribute specifications.
 - State supported and unsupported dtype, shape, rank, scalar, empty tensor, layout, and format behavior when the PRD provides it.
 - Define mathematical semantics with rigorous pure mathematical language and LaTeX formulas. Describe the operator as an abstract mapping over mathematical domains, codomains, tensor indices, broadcasting relations, reductions, or shape transforms as applicable, independent of NPU implementation.
-- Make functional, numeric, and shape semantics testable.
+- Make functional, numeric, and shape semantics testable. Treat the Functional Semantics NumPy and Pure C++17 Reference Functions as the executable behavioral contract: the NumPy reference function signature must exactly match the Pure Python Signature, and the Pure C++17 reference function signature must exactly match the Pure C++ Signature except that the interface uses a declaration terminator while the reference uses a definition body. These functions are behavioral references only and must not include kernel design, tiling, scheduling, memory planning, hardware instruction selection, runtime APIs, or optimization strategy.
 - Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish required behavior, ask for clarification.
 - Preserve PRD constraints unless the review explicitly corrects them.
 - Use measurable performance requirements only when the PRD provides them. Otherwise state that no additional performance requirement is specified by the PRD.

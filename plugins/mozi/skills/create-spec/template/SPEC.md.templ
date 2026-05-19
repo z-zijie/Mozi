@@ -41,7 +41,13 @@ Define the operator as a pure mathematical mapping over its input domains using 
 {{MATHEMATICAL_SEMANTICS}}
 
 ## 9. Functional Semantics / 功能语义
-Specify the observable functional behavior, execution-independent rules, and equivalence to reference semantics.
+Specify the observable functional behavior, execution-independent rules, and equivalence to executable reference semantics. Include both required subsections:
+
+### NumPy Reference Function
+Include a `python` fenced code block that imports NumPy as `np` and defines the executable behavioral reference function. The function name, full parameter list, defaults, annotations, and return annotation must exactly match the `Pure Python Signature` after whitespace normalization. The function must include a complete docstring documenting purpose, every parameter, return value contract, unsupported/error cases, and functional semantics notes. The function body must return actual computed reference outputs.
+
+### Pure C++17 Reference Function
+Include a `cpp` fenced code block that defines the executable behavioral reference function in framework-independent Pure C++17. The function name, return type, parameter declarations, parameter order, defaults, and qualifiers must exactly match the `Pure C++ Signature` after whitespace and declaration-vs-definition terminator normalization. The function must include Doxygen documentation for every parameter and the return value. The function body must return actual computed reference outputs. This reference is a behavioral contract only and must not include kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, low-level runtime API design, or optimization strategy.
 
 {{FUNCTIONAL_SEMANTICS}}
 
