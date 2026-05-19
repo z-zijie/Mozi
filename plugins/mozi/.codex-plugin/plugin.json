@@ -1,7 +1,7 @@
 {
   "name": "mozi",
   "version": "0.1.0",
-  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation, review, and review-driven revision.",
+  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation, PRD review, and behavioral SPEC generation.",
   "author": {
     "name": "z-zijie",
     "email": "z-zijie@users.noreply.github.com",
@@ -15,14 +15,15 @@
     "operator-development",
     "harness",
     "prd",
+    "spec",
     "codex-plugin"
   ],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Mozi",
-    "shortDescription": "Generate and review operator PRDs for NPU harness work.",
-    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflows provide $mozi:create-prd to generate a normalized operator PRD from a brief user prompt or revise an existing PRD from review feedback, and $mozi:review-prd to score a PRD for SPEC readiness.",
+    "shortDescription": "Generate PRDs, review readiness, and create SPECs for NPU operator work.",
+    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflows provide $mozi:create-prd to generate a normalized operator PRD from a brief user prompt or revise an existing PRD from review feedback, $mozi:review-prd to score a PRD for SPEC readiness, and $mozi:create-spec to generate or revise a behavioral operator SPEC from a PRD.",
     "developerName": "z-zijie",
     "category": "Productivity",
     "capabilities": [
@@ -30,7 +31,9 @@
       "Operator PRD generation",
       "Operator PRD revision",
       "Operator PRD review",
-      "SPEC readiness scoring"
+      "SPEC readiness scoring",
+      "Operator SPEC generation",
+      "Operator SPEC revision"
     ],
     "websiteURL": "https://github.com/z-zijie/Mozi",
     "privacyPolicyURL": "https://github.com/z-zijie/Mozi",
@@ -39,10 +42,13 @@
       "Use $mozi:create-prd to generate a PRD for AddRelu.",
       "Use $mozi:create-prd with a PRD path and review feedback to revise the PRD in place.",
       "Use $mozi:review-prd with an absolute PRD path to score whether the PRD is ready for SPEC.",
+      "Use $mozi:create-spec with a PRD path to generate a behavioral operator SPEC.",
+      "Use $mozi:create-spec with PRD and SPEC paths plus review feedback to revise the SPEC in place.",
       "Create a normalized operator PRD from a brief prompt.",
       "Update an operator PRD from review comments.",
       "Prepare a structured PRD document for a new NPU operator.",
-      "Review an operator PRD and return a YAML SPEC readiness decision."
+      "Review an operator PRD and return a YAML SPEC readiness decision.",
+      "Create a structured operator SPEC from an approved or readable PRD."
     ],
     "brandColor": "#2563EB"
   }

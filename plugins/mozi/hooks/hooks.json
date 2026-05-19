@@ -9,6 +9,12 @@
             "command": "python3 \"$PLUGIN_ROOT/hooks/post_edit_validate_prd.py\"",
             "timeout": 30,
             "statusMessage": "Validating Mozi PRD"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$PLUGIN_ROOT/hooks/post_edit_validate_spec.py\"",
+            "timeout": 30,
+            "statusMessage": "Validating Mozi SPEC"
           }
         ]
       }

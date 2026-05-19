@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Operator SPEC"
+  short_description: "Generate or revise a behavioral operator SPEC"
+  default_prompt: "Use $mozi:create-spec with a Mozi PRD path to generate a SPEC, or with PRD and SPEC paths plus review feedback to revise the SPEC in place."

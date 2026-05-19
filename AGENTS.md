@@ -16,13 +16,14 @@ This repository is a Codex plugin repository.
 
 Validate `plugins/mozi/.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` as JSON before publishing or installing the plugin.
 
-There is no plugin test suite yet. For the `$mozi:create-prd` and `$mozi:review-prd` workflows, validate the manifest, template source, skill files, and validator scripts from the repository root:
+There is no plugin test suite yet. For the `$mozi:create-prd`, `$mozi:review-prd`, and `$mozi:create-spec` workflows, validate the manifest, template source, skill files, and validator scripts from the repository root:
 
 ```bash
 python3 -m json.tool plugins/mozi/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool plugins/mozi/hooks/hooks.json >/dev/null
 test -f plugins/mozi/hooks/post_edit_validate_prd.py
+test -f plugins/mozi/hooks/post_edit_validate_spec.py
 test -f plugins/mozi/skills/create-prd/SKILL.md
 test -f plugins/mozi/skills/create-prd/template/PRD.md.templ
 test -f plugins/mozi/skills/create-prd/scripts/validate_prd.py
@@ -30,6 +31,9 @@ test -f plugins/mozi/skills/review-prd/SKILL.md
 test -f plugins/mozi/skills/review-prd/references/rubric.md
 test -f plugins/mozi/skills/review-prd/references/output-contract.md
 test -f plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py
+test -f plugins/mozi/skills/create-spec/SKILL.md
+test -f plugins/mozi/skills/create-spec/template/SPEC.md.templ
+test -f plugins/mozi/skills/create-spec/scripts/validate_spec.py
 ```
 
 The PRD completeness validator is strict and intended for final PRDs:
@@ -57,6 +61,20 @@ python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-y
 ```
 
 It fails on Markdown fences, malformed constrained YAML, missing keys, invalid score ranges, total-score mismatches, rating mismatches, invalid SPEC entry decisions, and score-based hard-gate violations.
+
+The SPEC completeness validator is strict and intended for final SPECs:
+
+```bash
+python3 plugins/mozi/skills/create-spec/scripts/validate_spec.py docs/mozi/<op-name-kebab-case>/spec.md --operator <OP_NAME>
+```
+
+The `$mozi:create-spec` workflow has two modes. With one readable PRD path, it creates or overwrites the sibling SPEC at `docs/mozi/<op-name-kebab-case>/spec.md`. With a readable PRD path, readable SPEC path, and review feedback, it revises that SPEC in place.
+
+Generated SPECs must stay within SPEC boundaries: operator contract, interface, input/output and attribute specifications, functional/numeric/shape semantics, dtype/layout constraints, boundary cases, error handling, compatibility, performance requirements, and acceptance criteria. Do not include DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
+
+The `$mozi:create-spec` completeness validator is wired into the plugin-bundled `PostToolUse` hook at `plugins/mozi/hooks/`. When plugin hooks are enabled and trusted, SPEC edits are validated automatically after edit/write tool calls. If plugin hooks are disabled, unavailable, or not trusted, run the validator manually before reporting success.
+
+It fails on unresolved template placeholders, `TBD`, missing or reordered template sections, empty section bodies, missing operator interface content, and unresolved open issues.
 
 ## Editing Guidelines
 
