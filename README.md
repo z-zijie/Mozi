@@ -8,6 +8,18 @@ Invoke `$mozi:create-prd` with a brief operator request to generate a normalized
 
 The workflow uses `plugins/mozi/skills/create-prd/template/PRD.md.templ` as the canonical PRD structure. It fills requirement-level sections from the brief prompt, requires NPU ARCH and operator prototype sections as scope/interface context, marks missing details as `TBD`, and tracks unresolved decisions in the open questions section. Operator prototypes are written in PyTorch ATen IR form. Generated PRDs describe intent, scope, behavior, constraints, and acceptance criteria; SPEC/DESIGN/IMPLEMENT details such as kernel strategy, tiling, memory planning, or optimization approach are out of scope.
 
+`$mozi:create-prd` also supports revising an existing PRD from review feedback. When the input includes one readable PRD path plus inline review content or a readable review file path, the workflow updates that PRD in place instead of generating a new one. Review input may be `$mozi:review-prd` YAML or natural-language comments. Structured YAML fields such as `blocking_issues`, `key_issues`, `improvement_suggestions`, `score_breakdown`, `spec_entry_decision`, and `review_notes` are preferred when present.
+
+Example revision prompts:
+
+```text
+$mozi:create-prd docs/mozi/add-relu/prd.md using this review: <paste review YAML or comments>
+
+$mozi:create-prd /abs/path/docs/mozi/add-relu/prd.md using review /abs/path/review.yaml
+```
+
+Revision mode preserves the canonical PRD headings, keeps valid existing requirement content, applies only PRD-level changes, and does not invent missing product facts. If review feedback requires information that was not provided, the workflow keeps or adds the item under `Open Questions / 待澄清问题`; the strict completeness validator will report the PRD as incomplete until that information is resolved.
+
 Final PRDs can be checked with the strict completeness validator:
 
 ```bash
@@ -16,7 +28,7 @@ python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-nam
 
 When `$mozi:create-prd` runs from an installed plugin in a target repository that does not contain the Mozi source tree, the workflow uses the bundled validator from the active skill directory instead of requiring `plugins/mozi/` in that target repository.
 
-The validator requires the rendered PRD to keep the template headings, include the NPU ARCH and operator prototype sections, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open questions.
+The validator requires the rendered or revised PRD to keep the template headings, include the NPU ARCH and operator prototype sections, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open questions.
 
 Invoke `$mozi:review-prd <absolute-prd-path>` to review an existing operator PRD before the SPEC stage. The workflow reads exactly one absolute PRD path, scores the document with a 100-point rubric, applies hard SPEC-entry gates, and outputs YAML only for CI or agent workflows.
 

@@ -40,6 +40,8 @@ Generated PRDs must include the template's NPU ARCH and 算子原型 sections. T
 
 Generated PRDs must stay within PRD boundaries. They should describe requirement intent, scope, supported behavior, input/output interface, constraints, and acceptance criteria. Do not include SPEC/DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level API design, or optimization approach.
 
+When `$mozi:create-prd` receives an existing PRD path plus review feedback, treat it as a review-driven revision workflow. Modify the provided PRD in place, accept either `$mozi:review-prd` YAML or natural-language review comments, preserve the canonical PRD template headings, keep changes at PRD level, and run the same PRD completeness validator on the modified PRD before finishing.
+
 When `$mozi:create-prd` runs from an installed plugin in another target repository, that repository might not have `plugins/mozi/`. In that case, use the loaded skill directory's bundled `scripts/validate_prd.py` and do not treat the missing repo-local plugin source as a workflow failure.
 
 It fails on unresolved template placeholders, `TBD`, missing or reordered template sections, empty section bodies, and unresolved open questions.
