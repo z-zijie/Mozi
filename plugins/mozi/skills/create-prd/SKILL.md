@@ -46,12 +46,10 @@ The generated PRD should be implementation-oriented and easy for an operator-dev
 
 ## Validation
 
-After writing the PRD, verify:
+After writing the PRD, run the completeness validator from the repository root:
 
 ```bash
-test -f docs/mozi/<op-name-kebab-case>/prd.md
-test -s docs/mozi/<op-name-kebab-case>/prd.md
-grep -q '^# <OP_NAME> PRD$' docs/mozi/<op-name-kebab-case>/prd.md
-grep -q '^## 13. References / 参考资料$' docs/mozi/<op-name-kebab-case>/prd.md
-! grep -q '{{.*}}' docs/mozi/<op-name-kebab-case>/prd.md
+python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
 ```
+
+If validation fails, keep the generated PRD file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open questions make the PRD incomplete.

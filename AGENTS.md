@@ -16,18 +16,23 @@ This repository is a Codex plugin repository.
 
 Validate `plugins/mozi/.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` as JSON before publishing or installing the plugin.
 
-There is no plugin test suite yet. For the `$mozi:create-prd` workflow, validate the manifest, template source, and AddRelu PRD from the repository root:
+There is no plugin test suite yet. For the `$mozi:create-prd` workflow, validate the manifest, template source, and validator script from the repository root:
 
 ```bash
 python3 -m json.tool plugins/mozi/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 test -f plugins/mozi/skills/create-prd/SKILL.md
 test -f plugins/mozi/skills/create-prd/template/PRD.md.templ
-test -f docs/mozi/add-relu/prd.md
-test -s docs/mozi/add-relu/prd.md
-grep -q '^# AddRelu PRD$' docs/mozi/add-relu/prd.md
-grep -q '^## 13. References / 参考资料$' docs/mozi/add-relu/prd.md
+test -f plugins/mozi/skills/create-prd/scripts/validate_prd.py
 ```
+
+The PRD completeness validator is strict and intended for final PRDs:
+
+```bash
+python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
+```
+
+It fails on unresolved template placeholders, `TBD`, missing or reordered template sections, empty section bodies, and unresolved open questions.
 
 ## Editing Guidelines
 
