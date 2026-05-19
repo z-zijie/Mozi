@@ -16,7 +16,7 @@ This repository is a Codex plugin repository.
 
 Validate `plugins/mozi/.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` as JSON before publishing or installing the plugin.
 
-There is no plugin test suite yet. For the `$mozi:create-prd`, `$mozi:review-prd`, and `$mozi:create-spec` workflows, validate the manifest, template source, skill files, and validator scripts from the repository root:
+There is no plugin test suite yet. For the `$mozi:create-prd`, `$mozi:review-prd`, `$mozi:create-spec`, and `$mozi:review-spec` workflows, validate the manifest, template source, skill files, and validator scripts from the repository root:
 
 ```bash
 python3 -m json.tool plugins/mozi/.codex-plugin/plugin.json >/dev/null
@@ -31,6 +31,10 @@ test -f plugins/mozi/skills/review-prd/SKILL.md
 test -f plugins/mozi/skills/review-prd/references/rubric.md
 test -f plugins/mozi/skills/review-prd/references/output-contract.md
 test -f plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py
+test -f plugins/mozi/skills/review-spec/SKILL.md
+test -f plugins/mozi/skills/review-spec/references/rubric.md
+test -f plugins/mozi/skills/review-spec/references/output-contract.md
+test -f plugins/mozi/skills/review-spec/scripts/validate_review_yaml.py
 test -f plugins/mozi/skills/create-spec/SKILL.md
 test -f plugins/mozi/skills/create-spec/template/SPEC.md.templ
 test -f plugins/mozi/skills/create-spec/scripts/validate_spec.py
@@ -61,6 +65,14 @@ python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-y
 ```
 
 It fails on Markdown fences, malformed constrained YAML, missing keys, invalid score ranges, total-score mismatches, rating mismatches, invalid SPEC entry decisions, and score-based hard-gate violations.
+
+The SPEC review validator checks the YAML-only SPEC quality review contract:
+
+```bash
+python3 plugins/mozi/skills/review-spec/scripts/validate_review_yaml.py <review-yaml-file> --spec-path <absolute-spec-path>
+```
+
+It fails on Markdown fences, malformed constrained YAML, missing keys, invalid score ranges, total-score mismatches, grade mismatches, invalid dimension statuses, invalid error result shapes, and dimension order drift.
 
 The SPEC completeness validator is strict and intended for final SPECs:
 

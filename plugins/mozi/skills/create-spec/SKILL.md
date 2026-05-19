@@ -17,14 +17,16 @@ Use create mode when the prompt includes exactly one readable Markdown PRD path 
 
 - Accept absolute PRD paths and paths relative to the target repository root.
 - Read the PRD as the source of truth.
-- Create or overwrite the sibling SPEC path:
+- Create the sibling SPEC path:
 
 ```text
 docs/mozi/<op-name-kebab-case>/spec.md
 ```
 
 - Do not require a `$mozi:review-prd` pass before generating the SPEC.
-- If the PRD lacks facts needed for a final SPEC, do not invent them. Write the unresolved item in `Open Issues / 待确认问题`; strict validation will fail until the item is resolved.
+- If the target SPEC already exists and the user did not explicitly request overwrite, regeneration, or replacement, ask for confirmation before editing it.
+- If the PRD lacks facts needed for a final SPEC, do not invent them. Ask for clarification before creating the final SPEC.
+- If the user explicitly requests an incomplete draft, create it only as a draft/incomplete SPEC, run validation, and report the validation failure instead of reporting success.
 
 ### Revision Mode
 
@@ -37,6 +39,7 @@ Use revision mode when the prompt includes one readable PRD path, one readable S
 - If multiple candidate PRD or SPEC paths are present, or if review content is missing or unreadable, ask the user to clarify before editing.
 - If a review file path is provided, read it as the review input. If inline review content is provided, use that content directly.
 - Prefer structured YAML review content when present. Otherwise extract actionable SPEC-level issues from natural language comments.
+- If review feedback requires missing information, ask for clarification before finalizing the SPEC.
 - Preserve or restore the canonical template headings and order from `template/SPEC.md.templ`.
 - Keep edits within SPEC boundaries: operator contract, interface, supported inputs/outputs, attributes, mathematical/functional/numeric/shape semantics, dtype/layout constraints, boundary cases, errors, compatibility, performance requirements, and acceptance criteria.
 - Preserve the `Mathematical Semantics / 数学语义` section as the pure mathematical definition of the operator.
@@ -52,13 +55,13 @@ In create mode, extract `<OP_NAME>` from the PRD title `# <OP_NAME> PRD`.
 
 ## Output
 
-In create mode, create or overwrite:
+In create mode, create:
 
 ```text
 docs/mozi/<op-name-kebab-case>/spec.md
 ```
 
-Always overwrite the target SPEC with the rendered SPEC generated from the template source. This workflow is deterministic; regeneration replaces the prior generated SPEC.
+If the target SPEC does not exist, write the rendered SPEC generated from the template source. If it exists, overwrite it only when the user explicitly requested overwrite, regeneration, or replacement.
 
 In revision mode, update the provided SPEC file in place. Do not overwrite it with a freshly rendered document unless the existing document must be restored to the canonical template structure.
 
@@ -69,6 +72,8 @@ Use `template/SPEC.md.templ` in this skill directory as the SPEC structure.
 - Replace `{{OP_NAME}}` with the parsed operator name.
 - Fill each `{{...}}` placeholder with concise SPEC content derived from the PRD and user prompt.
 - Keep the section headings and numbering from the template.
+- Do not write `TBD` in a final SPEC. Ask for missing required information before writing the final document.
+- If there are no unresolved issues, write `None` in `Open Issues / 待确认问题`.
 - Write section bodies in the user's language. If the prompt mixes languages, prefer concise English technical terms with Chinese explanations where useful.
 - In revision mode, use the template as the required section structure while preserving valid existing SPEC content that is not contradicted by the PRD or review feedback.
 
@@ -77,26 +82,12 @@ Use `template/SPEC.md.templ` in this skill directory as the SPEC structure.
 The generated SPEC should be precise enough for DESIGN and implementation work to start, but it should remain a behavioral contract rather than an implementation plan.
 
 - Define the operator interface with all required forms: PyTorch ATen IR, Pure Python `def` function signature, and framework-independent Pure C++ function signature.
-- In the `Operator Interface / 算子接口` section, use the following subsection structure exactly: `### PyTorch ATen IR`, `### Pure Python Signature`, and `### Pure C++ Signature`.
-- Put the ATen interface in a `text` code block, the Python signature in a `python` code block, and the C++ signature in a `cpp` code block.
-- Treat the interface definitions as the documentation. The Python code block must include a docstring under the `def` signature, and the C++ code block must include a Doxygen comment immediately before the function signature.
-- In the Python docstring, document the operator purpose, every parameter under `Args:`, return value under `Returns:`, key mathematical or functional semantics, numeric special cases, and aliasing/mutability behavior where relevant.
-- In the C++ Doxygen comment, document `@brief`, constraints, numeric semantics, memory semantics, every parameter with `@param`, and the return value with `@return`.
-- Use framework-independent C++ types such as `Tensor`, `Scalar`, `std::optional<T>`, `std::vector<int64_t>`, primitive numeric types, `bool`, `std::string`, or operator-specific enum names. Do not use PyTorch C++ namespace types such as `at::Tensor` or `c10::optional` in the Pure C++ signature.
-- For every Python and C++ signature parameter, document its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant. If the PRD does not provide enough information to document a parameter, list the unresolved item in `Open Issues / 待确认问题`.
+- Follow the exact operator interface, Shape Semantics, and Data Type Support instructions embedded in `template/SPEC.md.templ`; the validator enforces the required subsections, code blocks, docstrings, Doxygen comments, framework-independent C++ types, InferShape, and table-driven InferDtype.
 - Split PRD-level input/output overview into exact input, output, and attribute specifications.
 - State supported and unsupported dtype, shape, rank, scalar, empty tensor, layout, and format behavior when the PRD provides it.
 - Define mathematical semantics with rigorous pure mathematical language and LaTeX formulas. Describe the operator as an abstract mapping over mathematical domains, codomains, tensor indices, broadcasting relations, reductions, or shape transforms as applicable, independent of NPU implementation.
 - Make functional, numeric, and shape semantics testable.
-- In `Shape Semantics / Shape 语义`, keep the section heading unchanged and do not add subsection headings. Directly include prose shape rules followed by a `python` fenced code block that implements NumPy-based InferShape logic.
-- The Shape Semantics InferShape code block must include `import numpy as np` and define a function whose name and parameter list exactly match the earlier `Pure Python Signature`.
-- The InferShape function must include a complete docstring documenting its shape-inference purpose, every parameter, the return shape contract, unsupported/error cases, and shape-rule notes.
-- Keep the InferShape implementation simple and efficient. Prefer an ordered table of shape rules rather than deeply nested ad hoc conditionals, and return only shape metadata rather than computed tensor values.
-- In `Data Type Support / 数据类型支持`, include prose dtype rules followed by a `python` fenced code block that implements InferDtype logic.
-- The Data Type Support InferDtype code block must define a function whose name and parameter list exactly match the earlier `Pure Python Signature`.
-- The InferDtype function must include a complete docstring documenting its dtype-inference purpose, every parameter, the return dtype contract, unsupported/error cases, and promotion-rule notes.
-- Implement InferDtype with table-driven dtype rules, such as a local `dtype_table`, `promotion_table`, or `dtype_rules` assignment, and return only dtype metadata rather than computed tensor values.
-- Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish the behavior, list it in `Open Issues / 待确认问题`.
+- Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish required behavior, ask for clarification.
 - Preserve PRD constraints unless the review explicitly corrects them.
 - Use measurable performance requirements only when the PRD provides them. Otherwise state that no additional performance requirement is specified by the PRD.
 - Keep acceptance criteria concrete and suitable for operator-level validation.
@@ -104,13 +95,13 @@ The generated SPEC should be precise enough for DESIGN and implementation work t
 
 ## Validation
 
-Completeness validation is handled by the Mozi plugin's bundled `PostToolUse` hook after SPEC edits.
+The Mozi plugin's bundled `PostToolUse` hook may report SPEC validation failures after edits. Treat hook output as early failure feedback, not as the final success signal.
 
 Treat validator scripts as black-box executables. Do not read, inspect, summarize, or reason from validator source code before running validation. Only inspect validator source code when the user explicitly asks to debug or modify the validator itself.
 
-When plugin hooks are enabled and trusted, the hook validates edited Mozi SPECs automatically and reports validator errors back into the turn. If the hook reports validation failure, either fix the SPEC and let the hook run again after the next edit, or report the validation errors to the user if the missing information cannot be resolved from the PRD or prompt.
+If the hook reports validation failure, either fix the SPEC and validate again, or report the validation errors to the user if the missing information cannot be resolved from the PRD or prompt.
 
-If plugin hooks are disabled, unavailable, or not trusted, run the completeness validator manually before reporting success.
+Always run the completeness validator manually before reporting success.
 
 First resolve the target repository root before choosing a manual validator path. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
 
@@ -134,4 +125,4 @@ python3 <this-skill-dir>/scripts/validate_spec.py docs/mozi/<op-name-kebab-case>
 
 In revision mode outside the Mozi plugin repository, pass the actual modified SPEC path to the bundled validator.
 
-If validation fails, keep the generated or revised SPEC file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open issues make the SPEC incomplete.
+If validation fails, keep the generated or revised SPEC file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open issues make the SPEC incomplete. Report success only after the manual validator passes.

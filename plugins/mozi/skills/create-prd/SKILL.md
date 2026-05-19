@@ -15,6 +15,10 @@ Use this skill when the user invokes `$mozi:create-prd`, asks to create a PRD fo
 
 Use create mode when the prompt identifies an operator request but does not provide an existing PRD path plus review feedback.
 
+- If the target PRD already exists and the user did not explicitly request overwrite, regeneration, or replacement, ask for confirmation before editing it.
+- If information required for a final PRD is missing, ask for clarification before creating or revising the final document.
+- If the user explicitly requests an incomplete draft, create it only as a draft/incomplete PRD, run validation, and report the validation failure instead of reporting success.
+
 ### Revision Mode
 
 Use revision mode when the prompt includes one readable Markdown PRD path and either inline review content or one readable review file path.
@@ -26,7 +30,7 @@ Use revision mode when the prompt includes one readable Markdown PRD path and ei
 - If the review file path is provided, read it as the review input. If inline review content is provided, use that content directly.
 - Prefer structured `$mozi:review-prd` YAML when the review matches the review contract. Use `blocking_issues`, `key_issues`, `improvement_suggestions`, `score_breakdown`, `spec_entry_decision`, and `review_notes` as the main sources of requested changes.
 - If the review is plain text or invalid YAML, extract the actionable PRD-level issues from the text and apply those changes.
-- Do not invent missing product facts. If the review requests missing information but does not provide it, add or keep the item in `Open Questions / 待澄清问题` and let validation report the PRD as incomplete.
+- Do not invent missing product facts. If review feedback requires missing information, ask for clarification before finalizing the PRD.
 - Preserve or restore the canonical template headings and order from `template/PRD.md.templ`.
 - Keep edits within PRD boundaries: requirement intent, scope, supported behavior, input/output interface, constraints, risks, references, and acceptance criteria.
 - Do not add SPEC/DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level API design, or optimization approach.
@@ -44,13 +48,13 @@ Extract the operator name from the user prompt and use it as `<OP_NAME>`.
 
 ## Output
 
-In create mode, create or overwrite:
+In create mode, create:
 
 ```text
 docs/mozi/<op-name-kebab-case>/prd.md
 ```
 
-Always overwrite the target PRD with the rendered PRD generated from the template source. This workflow is deterministic; regeneration replaces the prior generated PRD.
+If the target PRD does not exist, write the rendered PRD generated from the template source. If it exists, overwrite it only when the user explicitly requested overwrite, regeneration, or replacement.
 
 In revision mode, update the provided PRD file in place. Do not overwrite it with a freshly rendered document unless the existing document must be restored to the canonical template structure.
 
@@ -60,12 +64,13 @@ Use `template/PRD.md.templ` in this skill directory as the PRD structure.
 
 - Replace `{{OP_NAME}}` with the parsed operator name.
 - Fill each `{{...}}` placeholder with concise PRD content inferred from the user's brief prompt.
-- If the prompt does not provide enough information for a section, write `TBD` for that section and add the missing decision to `Open Questions / 待澄清问题`.
+- Do not write `TBD` in a final PRD. Ask for missing required information before writing the final document.
 - The PRD must include `NPU ARCH` and `算子原型` sections as requirement/interface context only.
 - Use `NPU ARCH` to describe the target architecture scope or dependency stated by the prompt, not a hardware execution design.
 - Write the operator prototype in PyTorch ATen IR form in the `算子原型` section.
 - Do not invent hardware, dtype, shape, framework, accuracy, or requirement-level performance constraints that are not supported by the prompt.
 - Keep the section headings and numbering from the template.
+- If there are no unresolved questions, write `None` in `Open Questions / 待澄清问题`.
 - Write section bodies in the user's language. If the prompt mixes languages, prefer concise English technical terms with Chinese explanations where useful.
 - In revision mode, use the template as the required section structure while preserving valid existing content that is not contradicted by review feedback.
 
@@ -81,13 +86,13 @@ The generated PRD should be requirement-oriented and easy for an operator-develo
 
 ## Validation
 
-Completeness validation is handled by the Mozi plugin's bundled `PostToolUse` hook after PRD edits.
+The Mozi plugin's bundled `PostToolUse` hook may report PRD validation failures after edits. Treat hook output as early failure feedback, not as the final success signal.
 
 Treat validator scripts as black-box executables. Do not read, inspect, summarize, or reason from validator source code before running validation. Only inspect validator source code when the user explicitly asks to debug or modify the validator itself.
 
-When plugin hooks are enabled and trusted, the hook validates edited Mozi PRDs automatically and reports validator errors back into the turn. If the hook reports validation failure, either fix the PRD and let the hook run again after the next edit, or report the validation errors to the user if the missing information cannot be resolved from the prompt.
+If the hook reports validation failure, either fix the PRD and validate again, or report the validation errors to the user if the missing information cannot be resolved from the prompt.
 
-If plugin hooks are disabled, unavailable, or not trusted, run the completeness validator manually before reporting success.
+Always run the completeness validator manually before reporting success.
 
 First resolve the target repository root before choosing a manual validator path. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
 
@@ -111,4 +116,4 @@ python3 <this-skill-dir>/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/
 
 In revision mode outside the Mozi plugin repository, pass the actual modified PRD path to the bundled validator.
 
-If validation fails, keep the generated or revised PRD file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open questions make the PRD incomplete.
+If validation fails, keep the generated or revised PRD file and report the validator errors to the user. The validator is strict: unresolved `TBD` content and open questions make the PRD incomplete. Report success only after the manual validator passes.

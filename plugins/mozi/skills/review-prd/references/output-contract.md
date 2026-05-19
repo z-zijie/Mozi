@@ -19,14 +19,16 @@
 
 ## Invalid Input Result
 
-For missing, extra, non-absolute, nonexistent, or unreadable input, return the normal schema with:
+For missing, extra, nonexistent, or unreadable input, return the normal schema with:
 
 - all dimension scores set to `0`
 - `total_score: 0`
 - `rating: "Failed"`
 - `spec_entry_decision.allowed: false`
 - a clear blocking issue explaining the input error
-- `prd_path: ""` only when the argument is missing; otherwise use the raw provided path or raw argument string
+- `prd_path: ""` only when the path is missing; otherwise use the raw provided path text
+
+Readable relative paths are valid inputs. Resolve them against the target repository root and output the resolved absolute path in successful reviews.
 
 ## Exact Schema
 
