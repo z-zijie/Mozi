@@ -38,7 +38,8 @@ Use revision mode when the prompt includes one readable PRD path, one readable S
 - If a review file path is provided, read it as the review input. If inline review content is provided, use that content directly.
 - Prefer structured YAML review content when present. Otherwise extract actionable SPEC-level issues from natural language comments.
 - Preserve or restore the canonical template headings and order from `template/SPEC.md.templ`.
-- Keep edits within SPEC boundaries: operator contract, interface, supported inputs/outputs, attributes, functional/numeric/shape semantics, dtype/layout constraints, boundary cases, errors, compatibility, performance requirements, and acceptance criteria.
+- Keep edits within SPEC boundaries: operator contract, interface, supported inputs/outputs, attributes, mathematical/functional/numeric/shape semantics, dtype/layout constraints, boundary cases, errors, compatibility, performance requirements, and acceptance criteria.
+- Preserve the `Mathematical Semantics / 数学语义` section as the pure mathematical definition of the operator.
 - Do not add DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
 
 ## Operator Name
@@ -78,6 +79,7 @@ The generated SPEC should be precise enough for DESIGN and implementation work t
 - Define the operator interface in PyTorch ATen IR form when available from the PRD.
 - Split PRD-level input/output overview into exact input, output, and attribute specifications.
 - State supported and unsupported dtype, shape, rank, scalar, empty tensor, layout, and format behavior when the PRD provides it.
+- Define mathematical semantics with rigorous pure mathematical language and LaTeX formulas. Describe the operator as an abstract mapping over mathematical domains, codomains, tensor indices, broadcasting relations, reductions, or shape transforms as applicable, independent of NPU implementation.
 - Make functional, numeric, and shape semantics testable.
 - Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish the behavior, list it in `Open Issues / 待确认问题`.
 - Preserve PRD constraints unless the review explicitly corrects them.

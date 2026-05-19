@@ -25,8 +25,9 @@ PATH_KEYS = {
 }
 MOZI_SPEC_MARKERS = (
     "## 4. Operator Interface / 算子接口",
-    "## 8. Functional Semantics / 功能语义",
-    "## 18. Open Issues / 待确认问题",
+    "## 8. Mathematical Semantics / 数学语义",
+    "## 9. Functional Semantics / 功能语义",
+    "## 19. Open Issues / 待确认问题",
 )
 
 

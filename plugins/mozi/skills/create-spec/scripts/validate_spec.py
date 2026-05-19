@@ -22,14 +22,15 @@ REQUIRED_OPERATOR_HEADINGS = (
     "## 4. Operator Interface / 算子接口",
     "## 5. Input Specification / 输入规格",
     "## 6. Output Specification / 输出规格",
-    "## 8. Functional Semantics / 功能语义",
-    "## 9. Numeric Semantics / 数值语义",
-    "## 10. Shape Semantics / Shape 语义",
-    "## 11. Data Type Support / 数据类型支持",
+    "## 8. Mathematical Semantics / 数学语义",
+    "## 9. Functional Semantics / 功能语义",
+    "## 10. Numeric Semantics / 数值语义",
+    "## 11. Shape Semantics / Shape 语义",
+    "## 12. Data Type Support / 数据类型支持",
 )
 OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = "算子接口必须使用 PyTorch ATen IR 形式描述。"
-OPEN_ISSUES_HEADING = "## 18. Open Issues / 待确认问题"
+OPEN_ISSUES_HEADING = "## 19. Open Issues / 待确认问题"
 NO_OPEN_ISSUES_VALUES = {
     "n/a",
     "none",
