@@ -1,5 +1,15 @@
 # SPEC Review YAML Output Contract
 
+## Contents
+
+- General rules
+- Path handling
+- Status rules
+- Grade rules
+- Invalid input result
+- Exact schema
+- Error schema
+
 ## General Rules
 
 - Output YAML only.
@@ -12,11 +22,28 @@
 - Use `critical_issues: []` only when there are no critical issues.
 - Use `recommended_actions: []` only when there are no recommended actions.
 
+## Path Handling
+
+- Successful reviews must output the resolved absolute SPEC path in `review_result.spec_path`.
+- Readable relative SPEC paths are valid inputs. Resolve them against the target repository root.
+- Invalid input results use `spec_path: ""` only for missing input. Otherwise use the raw path text supplied by the user.
+- Multiple candidate paths are invalid because the skill reviews exactly one SPEC.
+
 ## Status Rules
 
-- `pass`: score is at least 80% of the dimension max score.
-- `partial`: score is at least 40% and below 80%.
-- `fail`: score is below 40%.
+Set `status` from the rubric band for each dimension:
+
+- `scope_clarity`: `pass` 7-8, `partial` 3-6, `fail` 0-2.
+- `interface_completeness`: `pass` 9-10, `partial` 3-8, `fail` 0-2.
+- `type_rules`: `pass` 9-10, `partial` 3-8, `fail` 0-2.
+- `shape_rules`: `pass` 9-10, `partial` 3-8, `fail` 0-2.
+- `semantic_precision`: `pass` 13-15, `partial` 5-12, `fail` 0-4.
+- `boundary_coverage`: `pass` 9-10, `partial` 3-8, `fail` 0-2.
+- `error_handling`: `pass` 7-8, `partial` 3-6, `fail` 0-2.
+- `layout_and_memory_rules`: `pass` 7-8, `partial` 3-6, `fail` 0-2.
+- `platform_constraints`: `pass` 6, `partial` 2-5, `fail` 0-1.
+- `implementability`: `pass` 6-7, `partial` 2-5, `fail` 0-1.
+- `testability`: `pass` 7-8, `partial` 3-6, `fail` 0-2.
 
 ## Grade Rules
 
@@ -28,7 +55,7 @@
 
 ## Invalid Input Result
 
-For missing, non-absolute, nonexistent, non-file, or unreadable input, return the error schema with:
+For missing, ambiguous, nonexistent, non-file, or unreadable input, return the error schema with:
 
 - `total_score: 0`
 - `max_score: 100`
@@ -37,6 +64,8 @@ For missing, non-absolute, nonexistent, non-file, or unreadable input, return th
 - `dimensions: {}`
 - at least one critical issue and one recommended action
 - one of these error types: `missing_path`, `not_absolute_path`, `file_not_found`, `not_a_file`, `read_failed`
+
+Readable relative paths are valid inputs. Resolve them against the target repository root and output the resolved absolute path in successful reviews.
 
 ## Exact Schema
 

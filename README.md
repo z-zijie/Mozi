@@ -38,14 +38,14 @@ Review output includes the total score, rating, per-dimension scores, strengths,
 python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-yaml-file> --prd-path <resolved-absolute-prd-path>
 ```
 
-Invoke `$mozi:review-spec <absolute-spec-path>` to review an existing NPU operator SPEC. The workflow reads exactly one absolute SPEC path, scores the document with a fixed 100-point engineering-quality rubric, and outputs YAML only for CI or agent workflows.
+Invoke `$mozi:review-spec <spec-path>` to review an existing NPU operator SPEC. The workflow reads exactly one absolute or repo-root-relative SPEC path, resolves readable relative paths to absolute paths, scores the document with a fixed 100-point engineering-quality rubric, and outputs YAML only for CI or agent workflows.
 
-The SPEC review focuses on whether the SPEC is precise enough to drive DESIGN, IMPLEMENT, and TEST work. It scores scope clarity, interface completeness, dtype rules, shape rules, mathematical and numerical semantics, boundary cases, error handling, layout and memory rules, platform constraints, implementability, and testability. PRD background, business goals, and roadmap content are not primary scoring inputs.
+The SPEC review focuses on whether the SPEC is precise enough to drive DESIGN, IMPLEMENT, and TEST work. It scores scope clarity, mandatory operator interface forms, dtype rules including table-driven InferDtype, shape rules including NumPy InferShape, mathematical and numerical semantics, boundary cases, error handling, layout and memory rules, platform constraints, implementability, and testability. PRD background, business goals, and roadmap content are not primary scoring inputs.
 
-If the input path is missing, non-absolute, nonexistent, not a file, or unreadable, the workflow returns a YAML error report instead of asking for the path again. The bundled validator checks the YAML contract:
+If the input path is missing, ambiguous, nonexistent, not a file, or unreadable, the workflow returns a YAML error report instead of asking for the path again. The bundled validator checks the YAML contract and rejects normal review results for invalid paths:
 
 ```bash
-python3 plugins/mozi/skills/review-spec/scripts/validate_review_yaml.py <review-yaml-file> --spec-path <absolute-spec-path>
+python3 plugins/mozi/skills/review-spec/scripts/validate_review_yaml.py <review-yaml-file> --spec-path <resolved-absolute-spec-path>
 ```
 
 Invoke `$mozi:create-spec <prd-path>` to generate a behavioral operator SPEC from a readable Mozi PRD. The workflow reads the PRD as the source of truth and creates the sibling file at `docs/mozi/<op-name-kebab-case>/spec.md`. If the target SPEC already exists, the workflow asks for confirmation unless the user explicitly requested overwrite or regeneration.

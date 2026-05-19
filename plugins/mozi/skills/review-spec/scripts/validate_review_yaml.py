@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import os
 import re
 import sys
 from pathlib import Path
@@ -65,6 +66,20 @@ ERROR_TYPES = {
 }
 
 STATUSES = {"pass", "partial", "fail"}
+
+STATUS_BANDS: dict[str, dict[str, range]] = {
+    "scope_clarity": {"pass": range(7, 9), "partial": range(3, 7), "fail": range(0, 3)},
+    "interface_completeness": {"pass": range(9, 11), "partial": range(3, 9), "fail": range(0, 3)},
+    "type_rules": {"pass": range(9, 11), "partial": range(3, 9), "fail": range(0, 3)},
+    "shape_rules": {"pass": range(9, 11), "partial": range(3, 9), "fail": range(0, 3)},
+    "semantic_precision": {"pass": range(13, 16), "partial": range(5, 13), "fail": range(0, 5)},
+    "boundary_coverage": {"pass": range(9, 11), "partial": range(3, 9), "fail": range(0, 3)},
+    "error_handling": {"pass": range(7, 9), "partial": range(3, 7), "fail": range(0, 3)},
+    "layout_and_memory_rules": {"pass": range(7, 9), "partial": range(3, 7), "fail": range(0, 3)},
+    "platform_constraints": {"pass": range(6, 7), "partial": range(2, 6), "fail": range(0, 2)},
+    "implementability": {"pass": range(6, 8), "partial": range(2, 6), "fail": range(0, 2)},
+    "testability": {"pass": range(7, 9), "partial": range(3, 7), "fail": range(0, 3)},
+}
 
 
 class ParseError(ValueError):
@@ -215,12 +230,37 @@ def expected_grade(total_score: int) -> str:
     return "poor"
 
 
-def expected_status(score: int, max_score: int) -> str:
-    if score * 100 >= max_score * 80:
-        return "pass"
-    if score * 100 >= max_score * 40:
-        return "partial"
+def expected_status(dimension: str, score: int) -> str:
+    for status, score_range in STATUS_BANDS[dimension].items():
+        if score in score_range:
+            return status
     return "fail"
+
+
+def resolve_spec_path(path_text: str) -> Path:
+    path = Path(path_text)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return path.resolve(strict=False)
+
+
+def is_readable_file(path: Path) -> bool:
+    return path.exists() and path.is_file() and os.access(path, os.R_OK)
+
+
+def expected_error_type(path_text: str | None) -> str | None:
+    if path_text is None:
+        return None
+    if path_text == "":
+        return "missing_path"
+    path = resolve_spec_path(path_text)
+    if not path.exists():
+        return "file_not_found"
+    if not path.is_file():
+        return "not_a_file"
+    if not os.access(path, os.R_OK):
+        return "read_failed"
+    return None
 
 
 def validate_error_result(review_result: dict[str, Any], expected_spec_path: str | None, errors: list[str]) -> None:
@@ -237,8 +277,14 @@ def validate_error_result(review_result: dict[str, Any], expected_spec_path: str
     critical_issues = require_list(review_result.get("critical_issues"), "review_result.critical_issues", errors)
     recommended_actions = require_list(review_result.get("recommended_actions"), "review_result.recommended_actions", errors)
 
-    if expected_spec_path is not None and spec_path != expected_spec_path:
-        errors.append(f"review_result.spec_path must equal expected path: {expected_spec_path}")
+    expected_type = expected_error_type(expected_spec_path)
+    if expected_spec_path is not None:
+        if expected_type == "missing_path" and spec_path != "":
+            errors.append("review_result.spec_path must be empty for missing input")
+        elif expected_type != "missing_path" and spec_path != expected_spec_path:
+            errors.append(f"review_result.spec_path must equal raw input path: {expected_spec_path}")
+        if expected_type is None:
+            errors.append("error result is only valid when --spec-path is missing, ambiguous, nonexistent, non-file, or unreadable")
     if total_score != 0:
         errors.append("error result total_score must be 0")
     if max_score != 100:
@@ -260,6 +306,8 @@ def validate_error_result(review_result: dict[str, Any], expected_spec_path: str
     require_str(error.get("message"), "review_result.error.message", errors)
     if error_type and error_type not in ERROR_TYPES:
         errors.append(f"review_result.error.type must be one of: {', '.join(sorted(ERROR_TYPES))}")
+    if expected_type is not None and error_type != expected_type:
+        errors.append(f"review_result.error.type must be {expected_type!r} for the provided --spec-path")
 
 
 def validate_normal_result(review_result: dict[str, Any], expected_spec_path: str | None, errors: list[str]) -> None:
@@ -275,10 +323,19 @@ def validate_normal_result(review_result: dict[str, Any], expected_spec_path: st
     require_list(review_result.get("critical_issues"), "review_result.critical_issues", errors)
     require_list(review_result.get("recommended_actions"), "review_result.recommended_actions", errors)
 
-    if expected_spec_path is not None and spec_path != expected_spec_path:
-        errors.append(f"review_result.spec_path must equal expected path: {expected_spec_path}")
     if not Path(spec_path).is_absolute():
         errors.append("review_result.spec_path must be absolute for a normal review result")
+    spec_file = Path(spec_path)
+    if not is_readable_file(spec_file):
+        errors.append("normal review result spec_path must be an existing readable file")
+    if expected_spec_path is not None:
+        expected_type = expected_error_type(expected_spec_path)
+        if expected_type is not None:
+            errors.append("normal review result is invalid for missing, ambiguous, nonexistent, non-file, or unreadable --spec-path")
+        else:
+            resolved_expected = resolve_spec_path(expected_spec_path)
+            if spec_path != str(resolved_expected):
+                errors.append(f"review_result.spec_path must equal resolved absolute path: {resolved_expected}")
     if max_score != 100:
         errors.append("review_result.max_score must be 100")
     if grade not in GRADES:
@@ -306,10 +363,10 @@ def validate_normal_result(review_result: dict[str, Any], expected_spec_path: st
             errors.append(f"review_result.dimensions.{dimension}.max_score must be {max_value}")
         if status not in STATUSES:
             errors.append(f"review_result.dimensions.{dimension}.status must be one of: pass, partial, fail")
-        elif status != expected_status(score, max_value):
+        elif status != expected_status(dimension, score):
             errors.append(
                 f"review_result.dimensions.{dimension}.status must be "
-                f"{expected_status(score, max_value)!r} for score {score}/{max_value}"
+                f"{expected_status(dimension, score)!r} for score {score}/{max_value}"
             )
         if not findings:
             errors.append(f"review_result.dimensions.{dimension}.findings must not be empty")

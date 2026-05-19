@@ -78,6 +78,31 @@
       ]
     },
     {
+      "skill": "review-spec",
+      "name": "review-relative-spec-path",
+      "files": [
+        "plugins/mozi/evaluations/fixtures/add-relu/spec.md"
+      ],
+      "query": "$mozi:review-spec plugins/mozi/evaluations/fixtures/add-relu/spec.md",
+      "expected_behavior": [
+        "Resolves the relative path against the target repository root.",
+        "Outputs YAML only with review_result.spec_path set to the resolved absolute path.",
+        "Scores the mandatory Mozi SPEC structures including ATen, Python, C++, InferShape, and InferDtype.",
+        "Validates the YAML with validate_review_yaml.py using the resolved absolute path."
+      ]
+    },
+    {
+      "skill": "review-spec",
+      "name": "review-invalid-spec-path-failure",
+      "query": "$mozi:review-spec /definitely/not/a/spec.md",
+      "expected_behavior": [
+        "Returns the error YAML schema with total_score set to 0.",
+        "Sets error.type to file_not_found and spec_path to the raw provided path.",
+        "Includes at least one critical issue and recommended action.",
+        "Outputs YAML only and validates the error YAML."
+      ]
+    },
+    {
       "skill": "create-spec",
       "name": "create-final-spec-from-prd",
       "files": [

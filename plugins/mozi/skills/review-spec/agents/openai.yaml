@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Operator SPEC"
-  short_description: "Score a Mozi operator SPEC quality report"
-  default_prompt: "Use $mozi:review-spec with an absolute SPEC path to score SPEC quality and return YAML only."
+  short_description: "Score a Mozi operator SPEC and return a quality report"
+  default_prompt: "Use $mozi:review-spec with an absolute or repo-root-relative SPEC path to score SPEC quality and return YAML only."

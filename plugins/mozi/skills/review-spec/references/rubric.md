@@ -1,5 +1,13 @@
 # SPEC Review Rubric
 
+## Contents
+
+- SPEC-like document checks
+- Mandatory Mozi SPEC contract checks
+- Scoring rubric
+- Grade levels
+- Review priorities
+
 ## SPEC-like Document Checks
 
 Before scoring, decide whether the file is SPEC-like. A valid NPU operator SPEC should generally define:
@@ -11,6 +19,19 @@ Before scoring, decide whether the file is SPEC-like. A valid NPU operator SPEC 
 - Acceptance criteria or requirements that can drive DESIGN, IMPLEMENT, and TEST work.
 
 If the document is readable but not SPEC-like, still score it using the rubric, add a critical issue, and use specific suggestions to explain how to make it a SPEC.
+
+## Mandatory Mozi SPEC Contract Checks
+
+Apply these checks before assigning high scores:
+
+- Operator Interface must include PyTorch ATen IR, Pure Python Signature with docstring, and framework-independent Pure C++ Signature with Doxygen.
+- Python and C++ interface documentation must describe every signature parameter directly, including role, tensor semantics, shape and dtype constraints, layout, aliasing or mutability, defaults, and optionality where relevant.
+- Mathematical Semantics must define the operator as a rigorous pure mathematical mapping using professional mathematical language and LaTeX formulas.
+- Shape Semantics must keep direct section content without subsection headings and include NumPy InferShape code whose function name and parameters match the Pure Python Signature.
+- InferShape must include a complete docstring documenting purpose, every parameter, return shape contract, unsupported or error cases, and shape-rule notes.
+- Data Type Support must include table-driven InferDtype code whose function name and parameters match the Pure Python Signature.
+- InferDtype must include a complete docstring documenting purpose, every parameter, return dtype contract, unsupported or error cases, and promotion-rule notes.
+- The SPEC must remain a behavioral contract and avoid kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
 
 ## Scoring Rubric
 
@@ -27,7 +48,7 @@ Evaluate whether the SPEC clearly defines covered behavior, supported features, 
 
 ### 2. interface_completeness - 10 points
 
-Evaluate whether the SPEC completely defines operator name, inputs, outputs, attributes, function signatures, parameter semantics, defaults, optionality, and return semantics.
+Evaluate whether the SPEC completely defines operator name, inputs, outputs, attributes, function signatures, parameter semantics, defaults, optionality, and return semantics. Require ATen IR, Pure Python Signature with docstring, and framework-independent Pure C++ Signature with Doxygen before awarding 9-10.
 
 - 9-10: Interface is complete and directly usable.
 - 6-8: Interface is mostly complete with minor missing details.
@@ -36,7 +57,7 @@ Evaluate whether the SPEC completely defines operator name, inputs, outputs, att
 
 ### 3. type_rules - 10 points
 
-Evaluate whether dtype support, input/output dtype relations, illegal dtype behavior, and type promotion or non-promotion rules are explicit.
+Evaluate whether dtype support, input/output dtype relations, illegal dtype behavior, and type promotion or non-promotion rules are explicit. Require a table-driven InferDtype function with matching signature and complete docstring before awarding 9-10.
 
 - 9-10: Dtype rules are complete and testable.
 - 6-8: Dtype rules are mostly clear.
@@ -45,7 +66,7 @@ Evaluate whether dtype support, input/output dtype relations, illegal dtype beha
 
 ### 4. shape_rules - 10 points
 
-Evaluate rank, shape constraints, output shape inference, scalar tensor, empty tensor, broadcasting or reduction rules, and dynamic shape behavior.
+Evaluate rank, shape constraints, output shape inference, scalar tensor, empty tensor, broadcasting or reduction rules, and dynamic shape behavior. Require direct Shape Semantics content and NumPy InferShape code with matching signature and complete docstring before awarding 9-10.
 
 - 9-10: Shape rules are complete and testable.
 - 6-8: Shape rules are mostly clear.
@@ -54,7 +75,7 @@ Evaluate rank, shape constraints, output shape inference, scalar tensor, empty t
 
 ### 5. semantic_precision - 15 points
 
-Evaluate mathematical semantics and numerical semantics, including elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable.
+Evaluate mathematical semantics and numerical semantics, including rigorous pure mathematical definition, elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable.
 
 - 13-15: Semantics are rigorous, unambiguous, and cover numeric edge behavior.
 - 9-12: Semantics are mostly precise with minor omissions.
@@ -128,4 +149,5 @@ Evaluate whether key rules naturally become correctness, boundary, negative, dty
 - Do not score PRD background, business goals, roadmap, or value statements as primary SPEC quality.
 - Penalize SPECs that describe intent but omit dtype, shape, boundary, error, layout, or test requirements.
 - Penalize ambiguous phrases that cannot be directly implemented or tested.
+- Penalize missing mandatory Mozi SPEC contract structures even if surrounding prose is detailed.
 - Reward stable contracts that can drive DESIGN, IMPLEMENT, and TEST work without inventing missing behavior.
