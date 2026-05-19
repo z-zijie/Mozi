@@ -92,6 +92,10 @@ The generated SPEC should be precise enough for DESIGN and implementation work t
 - The Shape Semantics InferShape code block must include `import numpy as np` and define a function whose name and parameter list exactly match the earlier `Pure Python Signature`.
 - The InferShape function must include a complete docstring documenting its shape-inference purpose, every parameter, the return shape contract, unsupported/error cases, and shape-rule notes.
 - Keep the InferShape implementation simple and efficient. Prefer an ordered table of shape rules rather than deeply nested ad hoc conditionals, and return only shape metadata rather than computed tensor values.
+- In `Data Type Support / 数据类型支持`, include prose dtype rules followed by a `python` fenced code block that implements InferDtype logic.
+- The Data Type Support InferDtype code block must define a function whose name and parameter list exactly match the earlier `Pure Python Signature`.
+- The InferDtype function must include a complete docstring documenting its dtype-inference purpose, every parameter, the return dtype contract, unsupported/error cases, and promotion-rule notes.
+- Implement InferDtype with table-driven dtype rules, such as a local `dtype_table`, `promotion_table`, or `dtype_rules` assignment, and return only dtype metadata rather than computed tensor values.
 - Define error handling for unsupported inputs when the PRD or compatibility context supports it. If the PRD does not establish the behavior, list it in `Open Issues / 待确认问题`.
 - Preserve PRD constraints unless the review explicitly corrects them.
 - Use measurable performance requirements only when the PRD provides them. Otherwise state that no additional performance requirement is specified by the PRD.

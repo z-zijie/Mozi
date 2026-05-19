@@ -56,7 +56,7 @@ Specify output shape derivation, broadcasting, reduction, reshape, rank, and sym
 {{SHAPE_SEMANTICS}}
 
 ## 12. Data Type Support / 数据类型支持
-Specify supported, unsupported, and promotion-related dtype behavior for inputs, attributes, and outputs.
+Specify supported, unsupported, and promotion-related dtype behavior for inputs, attributes, and outputs. Include a `python` fenced code block that implements an InferDtype reference function whose function name and parameter list exactly match the `Pure Python Signature`. The function must have a complete docstring covering purpose, every parameter, return dtype contract, unsupported/error cases, and promotion-rule notes. Implement dtype inference with table-driven dtype rules, and return dtype metadata only.
 
 {{DATA_TYPE_SUPPORT}}
 

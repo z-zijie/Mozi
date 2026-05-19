@@ -30,6 +30,7 @@ REQUIRED_OPERATOR_HEADINGS = (
 )
 OPERATOR_INTERFACE_HEADING = "## 4. Operator Interface / 算子接口"
 SHAPE_SEMANTICS_HEADING = "## 11. Shape Semantics / Shape 语义"
+DATA_TYPE_SUPPORT_HEADING = "## 12. Data Type Support / 数据类型支持"
 OPERATOR_INTERFACE_TEMPLATE_NOTE = (
     "Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature with docstring, and a framework-independent pure C++ function signature with Doxygen documentation. The interface definitions are the documentation: every Python/C++ parameter must be documented in the signature block itself, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant."
 )
@@ -74,6 +75,10 @@ CPP_DOXYGEN_RE = re.compile(r"/\*\*(?P<body>.*?)\*/", re.DOTALL)
 CPP_PARAM_RE = re.compile(r"@param(?:\s+\[[^\]\n]+\])?\s+([A-Za-z_]\w*)\b")
 NUMPY_IMPORT_RE = re.compile(r"^\s*import\s+numpy\s+as\s+np\s*$", re.MULTILINE)
 RETURN_RE = re.compile(r"^\s*return\b", re.MULTILINE)
+TABLE_RULES_ASSIGNMENT_RE = re.compile(
+    r"^\s*[A-Za-z_]\w*(?:_?(?:table|rules))\s*(?::[^=\n]+)?=\s*(?:\{|\[|\()",
+    re.MULTILINE,
+)
 
 
 def read_text(path: Path, label: str) -> str:
@@ -384,6 +389,65 @@ def validate_shape_semantics(shape_body: str, operator_python_block: str | None)
     return errors
 
 
+def validate_data_type_support(dtype_body: str, operator_python_block: str | None) -> list[str]:
+    errors: list[str] = []
+
+    dtype_python_block = extract_fenced_block(dtype_body, "python")
+    if not dtype_python_block:
+        return errors + ["Data Type Support section must include a python fenced code block for InferDtype"]
+
+    dtype_name, dtype_params, dtype_param_texts, dtype_signature_errors = parse_python_signature_details(
+        dtype_python_block,
+        "Data Type Support InferDtype function",
+    )
+    errors.extend(dtype_signature_errors)
+
+    if operator_python_block:
+        (
+            operator_name,
+            _operator_params,
+            operator_param_texts,
+            operator_signature_errors,
+        ) = parse_python_signature_details(operator_python_block, "Pure Python signature")
+        if not operator_signature_errors and not dtype_signature_errors:
+            if dtype_name != operator_name:
+                errors.append(
+                    "Data Type Support InferDtype function name must match Pure Python Signature "
+                    f"({operator_name})"
+                )
+            if dtype_param_texts != operator_param_texts:
+                errors.append(
+                    "Data Type Support InferDtype parameters must match Pure Python Signature "
+                    f"({', '.join(operator_param_texts)})"
+                )
+
+    documented_dtype_params, doc_errors = parse_python_documented_params(dtype_python_block)
+    errors.extend(
+        error.replace("Pure Python Signature", "Data Type Support InferDtype").replace(
+            "Pure Python docstring",
+            "Data Type Support InferDtype docstring",
+        )
+        for error in doc_errors
+    )
+    missing_dtype_docs = sorted(param for param in dtype_params if param not in documented_dtype_params)
+    if missing_dtype_docs:
+        errors.append(
+            "Data Type Support InferDtype docstring Args section is missing parameters: "
+            + ", ".join(missing_dtype_docs)
+        )
+
+    if not RETURN_RE.search(dtype_python_block):
+        errors.append("Data Type Support InferDtype function must include a return statement")
+
+    if not TABLE_RULES_ASSIGNMENT_RE.search(dtype_python_block):
+        errors.append(
+            "Data Type Support InferDtype function must use table-driven dtype rules "
+            "with a local table/rules assignment"
+        )
+
+    return errors
+
+
 def infer_operator(spec_text: str) -> str | None:
     match = H1_RE.search(spec_text)
     return match.group(1) if match else None
@@ -459,6 +523,15 @@ def validate(spec_path: Path, template_path: Path, expected_operator: str | None
         errors.extend(
             validate_shape_semantics(
                 shape_semantics_body,
+                extract_operator_python_block(operator_interface_body),
+            )
+        )
+
+    data_type_support_body = sections.get(DATA_TYPE_SUPPORT_HEADING, "").strip()
+    if data_type_support_body:
+        errors.extend(
+            validate_data_type_support(
+                data_type_support_body,
                 extract_operator_python_block(operator_interface_body),
             )
         )
