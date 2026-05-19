@@ -42,7 +42,7 @@ python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-y
 
 Invoke `$mozi:create-spec <prd-path>` to generate a behavioral operator SPEC from a readable Mozi PRD. The workflow reads the PRD as the source of truth and creates or overwrites the sibling file at `docs/mozi/<op-name-kebab-case>/spec.md`.
 
-The SPEC stage expands PRD requirements into an operator contract suitable for DESIGN and implementation work. It covers overview, scope, supported NPU platforms, operator interface, input/output and attribute specifications, mathematical/functional/numeric/shape semantics, dtype support, layout and format constraints, boundary cases, error handling, compatibility, performance requirements, acceptance criteria, and open issues. The mathematical semantics section defines the operator as a pure mathematical mapping using rigorous language and LaTeX formulas. It does not include kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
+The SPEC stage expands PRD requirements into an operator contract suitable for DESIGN and implementation work. It covers overview, scope, supported NPU platforms, operator interface, input/output and attribute specifications, mathematical/functional/numeric/shape semantics, dtype support, layout and format constraints, boundary cases, error handling, compatibility, performance requirements, acceptance criteria, and open issues. The operator interface section includes PyTorch ATen IR, a Pure Python `def` function signature, a framework-independent Pure C++ function signature, and a parameter documentation table explaining every Python/C++ signature parameter. The mathematical semantics section defines the operator as a pure mathematical mapping using rigorous language and LaTeX formulas. It does not include kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
 
 `$mozi:create-spec` also supports revising an existing SPEC from review feedback. When the input includes one readable PRD path, one readable SPEC path, and inline review content or a readable review file path, the workflow updates that SPEC in place instead of generating a new path. The PRD remains the requirement source of truth, and review feedback is applied only at the SPEC level.
 
@@ -62,7 +62,7 @@ If plugin hooks are disabled, unavailable, or not trusted, final SPECs can be ch
 python3 plugins/mozi/skills/create-spec/scripts/validate_spec.py docs/mozi/<op-name-kebab-case>/spec.md --operator <OP_NAME>
 ```
 
-The SPEC validator requires the rendered or revised SPEC to keep the template headings, include PyTorch ATen IR operator interface content, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open issues.
+The SPEC validator requires the rendered or revised SPEC to keep the template headings, include the required Operator Interface subsections and ATen/Python/C++ signature code blocks, use framework-independent Pure C++ signature types, document every Python/C++ signature parameter, contain no unresolved placeholders, contain no `TBD`, and explicitly state that there are no open issues.
 
 ## Installation
 

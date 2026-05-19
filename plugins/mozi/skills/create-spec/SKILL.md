@@ -76,7 +76,11 @@ Use `template/SPEC.md.templ` in this skill directory as the SPEC structure.
 
 The generated SPEC should be precise enough for DESIGN and implementation work to start, but it should remain a behavioral contract rather than an implementation plan.
 
-- Define the operator interface in PyTorch ATen IR form when available from the PRD.
+- Define the operator interface with all required forms: PyTorch ATen IR, Pure Python `def` function signature, and framework-independent Pure C++ function signature.
+- In the `Operator Interface / 算子接口` section, use the following subsection structure exactly: `### PyTorch ATen IR`, `### Pure Python Signature`, `### Pure C++ Signature`, and `### Parameter Documentation / 参数说明`.
+- Put the ATen interface in a `text` code block, the Python signature in a `python` code block, and the C++ signature in a `cpp` code block.
+- Use framework-independent C++ types such as `Tensor`, `Scalar`, `std::optional<T>`, `std::vector<int64_t>`, primitive numeric types, `bool`, `std::string`, or operator-specific enum names. Do not use PyTorch C++ namespace types such as `at::Tensor` or `c10::optional` in the Pure C++ signature.
+- Add a parameter documentation table with columns `Parameter`, `Kind`, `Type / Default`, and `Meaning`. Cover every parameter from the Python and C++ signatures. For each parameter, precisely specify its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant. If the PRD does not provide enough information to document a parameter, list the unresolved item in `Open Issues / 待确认问题`.
 - Split PRD-level input/output overview into exact input, output, and attribute specifications.
 - State supported and unsupported dtype, shape, rank, scalar, empty tensor, layout, and format behavior when the PRD provides it.
 - Define mathematical semantics with rigorous pure mathematical language and LaTeX formulas. Describe the operator as an abstract mapping over mathematical domains, codomains, tensor indices, broadcasting relations, reductions, or shape transforms as applicable, independent of NPU implementation.

@@ -1,60 +1,96 @@
 # {{OP_NAME}} SPEC
 
 ## 1. Overview / 概述
+State the operator purpose, externally observable behavior, and relationship to the source PRD.
+
 {{OVERVIEW}}
 
 ## 2. Scope / 范围
+Define the functional scope, supported use cases, and explicitly excluded behavior.
+
 {{SCOPE}}
 
 ## 3. Supported Platforms / 支持的NPU平台
+Specify the target NPU platform scope and any platform-level compatibility constraints.
+
 {{SUPPORTED_PLATFORMS}}
 
 ## 4. Operator Interface / 算子接口
-算子接口必须使用 PyTorch ATen IR 形式描述。
+Define the operator interface using three canonical forms: the PyTorch ATen IR schema, a pure Python API signature, and a framework-independent pure C++ function signature. Each parameter must be accompanied by a precise semantic specification, including its functional role, tensor semantics, shape and dtype constraints, layout requirements, aliasing/mutability behavior, default values, and optionality semantics where relevant.
 
 {{OPERATOR_INTERFACE}}
 
 ## 5. Input Specification / 输入规格
+Define each input operand, including rank, shape, dtype, layout, value domain, optionality, and aliasing requirements when applicable.
+
 {{INPUT_SPECIFICATION}}
 
 ## 6. Output Specification / 输出规格
+Define each output value, including shape, dtype, layout, value domain, aliasing behavior, and determinism guarantees when applicable.
+
 {{OUTPUT_SPECIFICATION}}
 
 ## 7. Attribute Specification / 属性规格
+Define each operator attribute, including type, default value, valid range, interpretation, and interaction with inputs.
+
 {{ATTRIBUTE_SPECIFICATION}}
 
 ## 8. Mathematical Semantics / 数学语义
+Define the operator as a pure mathematical mapping over its input domains using rigorous notation and LaTeX formulas.
+
 {{MATHEMATICAL_SEMANTICS}}
 
 ## 9. Functional Semantics / 功能语义
+Specify the observable functional behavior, execution-independent rules, and equivalence to reference semantics.
+
 {{FUNCTIONAL_SEMANTICS}}
 
 ## 10. Numeric Semantics / 数值语义
+Specify precision, rounding, overflow, underflow, NaN, Inf, signed zero, and tolerance behavior when applicable.
+
 {{NUMERIC_SEMANTICS}}
 
 ## 11. Shape Semantics / Shape 语义
+Specify output shape derivation, broadcasting, reduction, reshape, rank, and symbolic dimension rules.
+
 {{SHAPE_SEMANTICS}}
 
 ## 12. Data Type Support / 数据类型支持
+Specify supported, unsupported, and promotion-related dtype behavior for inputs, attributes, and outputs.
+
 {{DATA_TYPE_SUPPORT}}
 
 ## 13. Layout and Format Constraints / Layout 与 Format 约束
+Specify accepted memory layouts, tensor formats, contiguity requirements, and layout preservation or conversion behavior.
+
 {{LAYOUT_FORMAT_CONSTRAINTS}}
 
 ## 14. Boundary Cases / 边界场景
+Specify behavior for boundary inputs such as empty tensors, zero-sized dimensions, scalar tensors, extreme values, and degenerate shapes.
+
 {{BOUNDARY_CASES}}
 
 ## 15. Error Handling / 错误处理
+Specify validation failures, unsupported cases, diagnostic requirements, and error behavior exposed to callers.
+
 {{ERROR_HANDLING}}
 
 ## 16. Compatibility / 兼容性说明
+Specify compatibility requirements with reference frameworks, prior versions, aliases, overloads, and documented deviations.
+
 {{COMPATIBILITY}}
 
 ## 17. Performance Requirements / 性能要求
+Specify measurable performance requirements or state that no additional performance requirement is established by the PRD.
+
 {{PERFORMANCE_REQUIREMENTS}}
 
 ## 18. Acceptance Criteria / 验收标准
+Specify verifiable criteria for functional correctness, numeric conformance, shape inference, dtype coverage, error handling, and documentation completeness.
+
 {{ACCEPTANCE_CRITERIA}}
 
 ## 19. Open Issues / 待确认问题
+List unresolved specification issues, or explicitly state that there are no open issues.
+
 {{OPEN_ISSUES}}
