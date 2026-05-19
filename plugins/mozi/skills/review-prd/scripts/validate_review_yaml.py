@@ -196,11 +196,10 @@ def expected_rating(total_score: int) -> str:
     return "Failed"
 
 
-def is_failure_shape(total_score: int, rating: str, spec_ready: bool, scores: dict[str, int], blocking: list[str]) -> bool:
+def is_failure_shape(total_score: int, rating: str, scores: dict[str, int], blocking: list[str]) -> bool:
     return (
         total_score == 0
         and rating == "Failed"
-        and spec_ready is False
         and bool(blocking)
         and all(score == 0 for score in scores.values())
     )
@@ -217,12 +216,11 @@ def validate(data: dict[str, Any], expected_prd_path: str | None = None) -> list
     spec_entry_decision = require_mapping(data.get("spec_entry_decision"), "spec_entry_decision", errors)
     review_notes = require_mapping(data.get("review_notes"), "review_notes", errors)
 
-    if list(review_result.keys()) != ["prd_path", "total_score", "rating", "spec_ready"]:
-        errors.append("review_result keys must be prd_path, total_score, rating, and spec_ready")
+    if list(review_result.keys()) != ["prd_path", "total_score", "rating"]:
+        errors.append("review_result keys must be prd_path, total_score, and rating")
     prd_path = require_str(review_result.get("prd_path"), "review_result.prd_path", errors, allow_empty=True)
     total_score = require_int(review_result.get("total_score"), "review_result.total_score", errors, 0, 100)
     rating = require_str(review_result.get("rating"), "review_result.rating", errors)
-    spec_ready = require_bool(review_result.get("spec_ready"), "review_result.spec_ready", errors)
 
     if expected_prd_path is not None and prd_path != expected_prd_path:
         errors.append(f"review_result.prd_path must equal expected path: {expected_prd_path}")
@@ -267,8 +265,6 @@ def validate(data: dict[str, Any], expected_prd_path: str | None = None) -> list
     require_list(review_notes.get("assumptions"), "review_notes.assumptions", errors)
     require_list(review_notes.get("warnings"), "review_notes.warnings", errors)
 
-    if spec_ready != allowed:
-        errors.append("review_result.spec_ready must equal spec_entry_decision.allowed")
     if allowed and blocking_issues:
         errors.append("blocking_issues must be [] when SPEC entry is allowed")
 
@@ -281,7 +277,7 @@ def validate(data: dict[str, Any], expected_prd_path: str | None = None) -> list
     if mechanical_gate_failed and allowed:
         errors.append("SPEC entry must be disallowed when a score-based hard gate fails")
 
-    failure_shape = is_failure_shape(total_score, rating, spec_ready, dimension_scores, blocking_issues)
+    failure_shape = is_failure_shape(total_score, rating, dimension_scores, blocking_issues)
     if prd_path == "" and not failure_shape:
         errors.append("Empty prd_path is only valid for the missing-input failure result")
     if prd_path and not Path(prd_path).is_absolute() and not failure_shape:

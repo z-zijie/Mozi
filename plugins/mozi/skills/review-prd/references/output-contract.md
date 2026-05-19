@@ -13,7 +13,6 @@
 - Use the exact top-level keys shown below.
 - Use integer scores only.
 - `total_score` must equal the sum of all dimension scores.
-- `review_result.spec_ready` and `spec_entry_decision.allowed` must always match.
 - Use `blocking_issues: []` when there are no blocking issues.
 - Use `review_notes.assumptions: []` and `review_notes.warnings: []` when none exist.
 - Use short quoted strings for comments, issues, suggestions, reasons, assumptions, and warnings.
@@ -25,7 +24,6 @@ For missing, extra, non-absolute, nonexistent, or unreadable input, return the n
 - all dimension scores set to `0`
 - `total_score: 0`
 - `rating: "Failed"`
-- `spec_ready: false`
 - `spec_entry_decision.allowed: false`
 - a clear blocking issue explaining the input error
 - `prd_path: ""` only when the argument is missing; otherwise use the raw provided path or raw argument string
@@ -37,7 +35,6 @@ review_result:
   prd_path: "<absolute path>"
   total_score: <integer 0-100>
   rating: "<Excellent | Good | Acceptable but Risky | Weak | Failed>"
-  spec_ready: <true | false>
 
 score_breakdown:
   goal_clarity:

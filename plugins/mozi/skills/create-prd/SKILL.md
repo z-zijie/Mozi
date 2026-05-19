@@ -36,13 +36,22 @@ Use `template/PRD.md.templ` in this skill directory as the PRD structure.
 - Replace `{{OP_NAME}}` with the parsed operator name.
 - Fill each `{{...}}` placeholder with concise PRD content inferred from the user's brief prompt.
 - If the prompt does not provide enough information for a section, write `TBD` for that section and add the missing decision to `Open Questions / 待澄清问题`.
-- Do not invent hardware, dtype, shape, framework, accuracy, or performance requirements that are not supported by the prompt.
+- The PRD must include `NPU ARCH` and `算子原型` sections as requirement/interface context only.
+- Use `NPU ARCH` to describe the target architecture scope or dependency stated by the prompt, not a hardware execution design.
+- Write the operator prototype in PyTorch ATen IR form in the `算子原型` section.
+- Do not invent hardware, dtype, shape, framework, accuracy, or requirement-level performance constraints that are not supported by the prompt.
 - Keep the section headings and numbering from the template.
 - Write section bodies in the user's language. If the prompt mixes languages, prefer concise English technical terms with Chinese explanations where useful.
 
 ## PRD Quality
 
-The generated PRD should be implementation-oriented and easy for an operator-development engineer to review. Prefer concrete bullets over prose when the prompt provides concrete facts. Keep uncertainty explicit instead of filling gaps with assumptions.
+The generated PRD should be requirement-oriented and easy for an operator-development engineer to review before SPEC/DESIGN work begins. It should describe what is needed and why, not how to implement it.
+
+- Keep the document within PRD boundaries: intent, scope, supported behavior, input/output interface, requirement-level constraints, and acceptance criteria.
+- Do not include kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level API design, or optimization approach.
+- Avoid vague performance promises such as "good performance", "optimized", or "high throughput". Include measurable product requirements only when the prompt explicitly provides them.
+- Keep acceptance criteria testable at the requirement level; do not prescribe implementation strategy.
+- Prefer concrete bullets over prose when the prompt provides concrete facts. Keep uncertainty explicit instead of filling gaps with assumptions.
 
 ## Validation
 

@@ -16,7 +16,7 @@ Before scoring, decide whether the file is PRD-like. A valid PRD-like document s
 - Goal, scope, requirements, input/output behavior, constraints, acceptance criteria, risks, or references.
 - Content that describes what and why, not mostly low-level implementation.
 
-If the document is readable but not PRD-like, still score it using the rubric, add a blocking issue, and set SPEC readiness to false.
+If the document is readable but not PRD-like, still score it using the rubric, add a blocking issue, and set `spec_entry_decision.allowed` to false.
 
 ## Scoring Rubric
 
@@ -113,7 +113,7 @@ Evaluate whether the document is well structured, easy to read and review, easy 
 
 ## SPEC Entry Gates
 
-Set `spec_ready: false` and `spec_entry_decision.allowed: false` if any gate is true:
+Set `spec_entry_decision.allowed: false` if any gate is true:
 
 - Total score is below 80.
 - Verifiability score is below 15.
@@ -124,4 +124,4 @@ Set `spec_ready: false` and `spec_entry_decision.allowed: false` if any gate is 
 - Major contradictions exist.
 - Implementation details are so heavy that the document is no longer a PRD.
 
-Otherwise set both values to true.
+Otherwise set `spec_entry_decision.allowed: true`.

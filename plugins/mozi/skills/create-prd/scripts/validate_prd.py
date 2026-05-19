@@ -17,7 +17,13 @@ PLACEHOLDER_RE = re.compile(r"\{\{[^{}\n]+\}\}")
 H1_RE = re.compile(r"^# (.+?) PRD$", re.MULTILINE)
 H2_RE = re.compile(r"^## .+$", re.MULTILINE)
 TBD_RE = re.compile(r"\bTBD\b", re.IGNORECASE)
-OPEN_QUESTIONS_HEADING = "## 12. Open Questions / 待澄清问题"
+REQUIRED_OPERATOR_HEADINGS = (
+    "## 7. NPU ARCH",
+    "## 8. 算子原型",
+)
+OPERATOR_PROTOTYPE_HEADING = "## 8. 算子原型"
+OPERATOR_PROTOTYPE_TEMPLATE_NOTE = "算子原型必须使用 PyTorch ATen IR 形式描述。"
+OPEN_QUESTIONS_HEADING = "## 13. Open Questions / 待澄清问题"
 NO_OPEN_QUESTIONS_VALUES = {
     "n/a",
     "none",
@@ -88,6 +94,10 @@ def validate(prd_path: Path, template_path: Path, expected_operator: str | None)
         errors.append(f"Expected exactly one H1 title, found {len(h1_lines)}")
 
     actual_headings = H2_RE.findall(prd_text)
+    for heading in REQUIRED_OPERATOR_HEADINGS:
+        if heading not in actual_headings:
+            errors.append(f"Missing required operator section: {heading}")
+
     if actual_headings != expected_headings:
         missing = [heading for heading in expected_headings if heading not in actual_headings]
         unexpected = [heading for heading in actual_headings if heading not in expected_headings]
@@ -114,6 +124,11 @@ def validate(prd_path: Path, template_path: Path, expected_operator: str | None)
         body = sections.get(heading, "").strip()
         if not body:
             errors.append(f"Section body is empty: {heading}")
+
+    operator_prototype_body = sections.get(OPERATOR_PROTOTYPE_HEADING, "").strip()
+    operator_prototype_content = operator_prototype_body.replace(OPERATOR_PROTOTYPE_TEMPLATE_NOTE, "").strip()
+    if operator_prototype_body and not operator_prototype_content:
+        errors.append("Operator prototype section must include PyTorch ATen IR content")
 
     open_questions = sections.get(OPEN_QUESTIONS_HEADING, "").strip()
     normalized_open_questions = open_questions.strip().lower()

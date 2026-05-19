@@ -36,6 +36,10 @@ The PRD completeness validator is strict and intended for final PRDs:
 python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
 ```
 
+Generated PRDs must include the template's NPU ARCH and 算子原型 sections. Treat these as requirement/interface context only: NPU ARCH describes target architecture scope or dependency, and 算子原型 describes the operator prototype in PyTorch ATen IR form.
+
+Generated PRDs must stay within PRD boundaries. They should describe requirement intent, scope, supported behavior, input/output interface, constraints, and acceptance criteria. Do not include SPEC/DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level API design, or optimization approach.
+
 When `$mozi:create-prd` runs from an installed plugin in another target repository, that repository might not have `plugins/mozi/`. In that case, use the loaded skill directory's bundled `scripts/validate_prd.py` and do not treat the missing repo-local plugin source as a workflow failure.
 
 It fails on unresolved template placeholders, `TBD`, missing or reordered template sections, empty section bodies, and unresolved open questions.
@@ -46,7 +50,7 @@ The PRD review validator checks the YAML-only review contract:
 python3 plugins/mozi/skills/review-prd/scripts/validate_review_yaml.py <review-yaml-file> --prd-path <absolute-prd-path>
 ```
 
-It fails on Markdown fences, malformed constrained YAML, missing keys, invalid score ranges, total-score mismatches, rating mismatches, inconsistent SPEC readiness booleans, and score-based hard-gate violations.
+It fails on Markdown fences, malformed constrained YAML, missing keys, invalid score ranges, total-score mismatches, rating mismatches, invalid SPEC entry decisions, and score-based hard-gate violations.
 
 ## Editing Guidelines
 
