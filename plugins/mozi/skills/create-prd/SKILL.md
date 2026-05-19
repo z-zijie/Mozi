@@ -81,11 +81,15 @@ The generated PRD should be requirement-oriented and easy for an operator-develo
 
 ## Validation
 
-After writing the PRD, run the completeness validator before reporting success.
+Completeness validation is handled by the Mozi plugin's bundled `PostToolUse` hook after PRD edits.
 
 Treat validator scripts as black-box executables. Do not read, inspect, summarize, or reason from validator source code before running validation. Only inspect validator source code when the user explicitly asks to debug or modify the validator itself.
 
-First resolve the target repository root. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
+When plugin hooks are enabled and trusted, the hook validates edited Mozi PRDs automatically and reports validator errors back into the turn. If the hook reports validation failure, either fix the PRD and let the hook run again after the next edit, or report the validation errors to the user if the missing information cannot be resolved from the prompt.
+
+If plugin hooks are disabled, unavailable, or not trusted, run the completeness validator manually before reporting success.
+
+First resolve the target repository root before choosing a manual validator path. Do not decide that `plugins/mozi/` is missing from a nested output directory such as `docs/mozi/<op-name-kebab-case>/`.
 
 When working in the Mozi plugin repository, prefer the repo-local validator from the repository root:
 

@@ -18,6 +18,7 @@
     "codex-plugin"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Mozi",
     "shortDescription": "Generate and review operator PRDs for NPU harness work.",

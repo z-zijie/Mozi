@@ -21,6 +21,8 @@ There is no plugin test suite yet. For the `$mozi:create-prd` and `$mozi:review-
 ```bash
 python3 -m json.tool plugins/mozi/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
+python3 -m json.tool plugins/mozi/hooks/hooks.json >/dev/null
+test -f plugins/mozi/hooks/post_edit_validate_prd.py
 test -f plugins/mozi/skills/create-prd/SKILL.md
 test -f plugins/mozi/skills/create-prd/template/PRD.md.templ
 test -f plugins/mozi/skills/create-prd/scripts/validate_prd.py
@@ -36,11 +38,13 @@ The PRD completeness validator is strict and intended for final PRDs:
 python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
 ```
 
+The `$mozi:create-prd` completeness validator is also wired into a plugin-bundled `PostToolUse` hook at `plugins/mozi/hooks/`. When plugin hooks are enabled with `[features].plugin_hooks = true` and trusted through `/hooks`, PRD edits are validated automatically after edit/write tool calls. If plugin hooks are disabled, unavailable, or not trusted, run the validator manually before reporting success.
+
 Generated PRDs must include the template's NPU ARCH and 算子原型 sections. Treat these as requirement/interface context only: NPU ARCH describes target architecture scope or dependency, and 算子原型 describes the operator prototype in PyTorch ATen IR form.
 
 Generated PRDs must stay within PRD boundaries. They should describe requirement intent, scope, supported behavior, input/output interface, constraints, and acceptance criteria. Do not include SPEC/DESIGN/IMPLEMENT details such as kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level API design, or optimization approach.
 
-When `$mozi:create-prd` receives an existing PRD path plus review feedback, treat it as a review-driven revision workflow. Modify the provided PRD in place, accept either `$mozi:review-prd` YAML or natural-language review comments, preserve the canonical PRD template headings, keep changes at PRD level, and run the same PRD completeness validator on the modified PRD before finishing.
+When `$mozi:create-prd` receives an existing PRD path plus review feedback, treat it as a review-driven revision workflow. Modify the provided PRD in place, accept either `$mozi:review-prd` YAML or natural-language review comments, preserve the canonical PRD template headings, and keep changes at PRD level. Rely on the post-edit hook for completeness validation when available; otherwise run the same PRD completeness validator on the modified PRD before finishing.
 
 When `$mozi:create-prd` runs from an installed plugin in another target repository, that repository might not have `plugins/mozi/`. In that case, use the loaded skill directory's bundled `scripts/validate_prd.py` and do not treat the missing repo-local plugin source as a workflow failure.
 

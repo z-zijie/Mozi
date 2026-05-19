@@ -20,7 +20,9 @@ $mozi:create-prd /abs/path/docs/mozi/add-relu/prd.md using review /abs/path/revi
 
 Revision mode preserves the canonical PRD headings, keeps valid existing requirement content, applies only PRD-level changes, and does not invent missing product facts. If review feedback requires information that was not provided, the workflow keeps or adds the item under `Open Questions / 待澄清问题`; the strict completeness validator will report the PRD as incomplete until that information is resolved.
 
-Final PRDs can be checked with the strict completeness validator:
+When plugin hooks are enabled with `[features].plugin_hooks = true` and the Mozi hook is trusted through `/hooks`, `$mozi:create-prd` PRD edits are checked automatically by the bundled post-edit hook. The hook runs the strict completeness validator after edit/write tool calls and feeds validation failures back into the agent turn.
+
+If plugin hooks are disabled, unavailable, or not trusted, final PRDs can be checked manually with the strict completeness validator:
 
 ```bash
 python3 plugins/mozi/skills/create-prd/scripts/validate_prd.py docs/mozi/<op-name-kebab-case>/prd.md --operator <OP_NAME>
@@ -51,3 +53,5 @@ codex plugin marketplace add z-zijie/Mozi
 The plugin name is `mozi`, and the outer folder name matches the manifest `name` field as required by the Codex plugin format.
 
 The marketplace name is `mozi-marketplace`, and its plugin entry uses the repo-local source path `./plugins/mozi`.
+
+The plugin bundles lifecycle hooks at `plugins/mozi/hooks/hooks.json`. Plugin-bundled hooks are opt-in in this Codex release, so users must enable `plugin_hooks` and trust the non-managed hook before it runs.
