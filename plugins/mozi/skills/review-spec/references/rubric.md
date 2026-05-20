@@ -35,6 +35,7 @@ Apply these checks before assigning high scores:
 - InferShape must include a complete docstring documenting purpose, every parameter, return shape contract, unsupported or error cases, and shape-rule notes.
 - Data Type Support must include table-driven InferDtype code whose function name and parameters match the Pure Python Signature.
 - InferDtype must include a complete docstring documenting purpose, every parameter, return dtype contract, unsupported or error cases, and promotion-rule notes.
+- Acceptance Criteria Numerical Analysis must include all six required H4 subsections: Floating Point Error Analysis, Stability Analysis, Conditioning, Reduction Error Analysis, Mixed Precision Analysis, and Error Budget. Each subsection must provide operator-specific analysis and end with an explicit conclusion sentence.
 - The SPEC must remain a behavioral contract and avoid kernel design, tiling strategy, memory planning, hardware instruction choice, scheduling, code structure, low-level runtime API design, or optimization approach.
 
 ## Scoring Rubric
@@ -79,11 +80,11 @@ Evaluate rank, shape constraints, output shape inference, scalar tensor, empty t
 
 ### 5. semantic_precision - 15 points
 
-Evaluate mathematical, functional, and numerical semantics, including rigorous pure mathematical definition, executable NumPy and Pure C++17 behavioral reference functions with signatures matching the operator interface, elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable.
+Evaluate mathematical, functional, and numerical semantics, including rigorous pure mathematical definition, executable NumPy and Pure C++17 behavioral reference functions with signatures matching the operator interface, elementwise or aggregate behavior, special values, precision, rounding, NaN, Inf, and +0/-0 behavior where applicable. Numerical analysis must deeply cover floating-point error sources, stability, conditioning, reduction error, mixed precision behavior, and an error budget tied to precision YAML scenarios.
 
-- 13-15: Semantics are rigorous, unambiguous, and cover numeric edge behavior.
-- 9-12: Semantics are mostly precise with minor omissions.
-- 5-8: Semantics are present but incomplete or vague.
+- 13-15: Semantics are rigorous, unambiguous, and cover numeric edge behavior, including all six numerical-analysis dimensions with explicit conclusions.
+- 9-12: Semantics are mostly precise with minor omissions; cap at 12 if any required numerical-analysis dimension is shallow or lacks a clear conclusion.
+- 5-8: Semantics are present but incomplete or vague; cap at 8 if multiple required numerical-analysis dimensions are missing or generic.
 - 0-4: Semantics are missing or not implementable.
 
 ### 6. boundary_coverage - 10 points
@@ -133,11 +134,11 @@ Evaluate whether the SPEC gives enough engineering constraints for DESIGN and IM
 
 ### 11. testability - 8 points
 
-Evaluate whether key rules naturally become correctness, boundary, negative, dtype, shape, numeric, and compatibility test cases.
+Evaluate whether key rules naturally become correctness, boundary, negative, dtype, shape, numeric, and compatibility test cases. Numerical analysis should directly justify precision tests, tolerance scenarios, reduction-order tests where applicable, mixed-precision tests, and ill-conditioned or stability-sensitive cases.
 
-- 7-8: Rules are directly convertible to tests.
-- 5-6: Mostly testable with minor gaps.
-- 3-4: Some testable content exists, but key cases are vague.
+- 7-8: Rules are directly convertible to tests, and the numerical-analysis error budget maps cleanly to precision scenarios.
+- 5-6: Mostly testable with minor gaps; cap at 6 if numerical-analysis conclusions do not clearly justify tolerance tests.
+- 3-4: Some testable content exists, but key cases are vague or the six numerical-analysis dimensions are not testable.
 - 0-2: Testability is poor or absent.
 
 ## Grade Levels
@@ -154,4 +155,5 @@ Evaluate whether key rules naturally become correctness, boundary, negative, dty
 - Penalize SPECs that describe intent but omit dtype, shape, boundary, error, layout, or test requirements.
 - Penalize ambiguous phrases that cannot be directly implemented or tested.
 - Penalize missing mandatory Mozi SPEC contract structures even if surrounding prose is detailed.
+- Treat missing or boilerplate coverage of multiple required numerical-analysis dimensions as a potential critical issue because it weakens the SPEC's precision contract.
 - Reward stable contracts that can drive DESIGN, IMPLEMENT, and TEST work without inventing missing behavior.

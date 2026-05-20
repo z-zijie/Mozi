@@ -50,6 +50,7 @@ NO_OPEN_ISSUES_VALUES = {
     "no open issues.",
 }
 H3_RE = re.compile(r"^### .+$", re.MULTILINE)
+H4_RE = re.compile(r"^#### .+$", re.MULTILINE)
 FENCE_RE_TEMPLATE = r"```{language}\s*\n(.*?)\n```"
 PYTHON_SIGNATURE_RE = re.compile(
     r"\bdef\s+(?P<name>[A-Za-z_]\w*)\s*\((?P<params>.*?)\)\s*(?:->\s*(?P<return>[^:\n]+))?\s*:",
@@ -91,6 +92,15 @@ TABLE_RULES_ASSIGNMENT_RE = re.compile(
 )
 MARKDOWN_TABLE_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
 NUMERIC_LITERAL_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$")
+REQUIRED_NUMERICAL_ANALYSIS_SUBSECTIONS = (
+    "#### Floating Point Error Analysis / 浮点误差分析",
+    "#### Stability Analysis / 稳定性分析",
+    "#### Conditioning / 条件数",
+    "#### Reduction Error Analysis / 归约误差分析",
+    "#### Mixed Precision Analysis / 混合精度分析",
+    "#### Error Budget / 误差预算",
+)
+CONCLUSION_RE = re.compile(r"^\s*(?:Conclusion|结论)\s*[:：]\s*\S", re.IGNORECASE)
 
 
 def read_text(path: Path, label: str) -> str:
@@ -138,6 +148,21 @@ def extract_h3_sections(section_text: str) -> dict[str, str]:
         end = matches[index + 1].start() if index + 1 < len(matches) else len(section_text)
         sections[heading] = section_text[start:end].strip()
     return sections
+
+
+def extract_h4_sections(section_text: str) -> dict[str, str]:
+    matches = list(H4_RE.finditer(section_text))
+    sections: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        heading = match.group(0)
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(section_text)
+        sections[heading] = section_text[start:end].strip()
+    return sections
+
+
+def remove_fenced_blocks(section_text: str) -> str:
+    return re.sub(r"```.*?```", "", section_text, flags=re.DOTALL).strip()
 
 
 def extract_fenced_block(section_text: str, language: str) -> str | None:
@@ -803,6 +828,26 @@ def validate_acceptance_criteria(acceptance_body: str) -> list[str]:
         errors.append("Acceptance Criteria Numerical Analysis subsection must include prose")
     elif "```" in numerical_body:
         errors.append("Acceptance Criteria Numerical Analysis subsection must be prose, not code only")
+    else:
+        h4_sections = extract_h4_sections(numerical_body)
+        for subsection in REQUIRED_NUMERICAL_ANALYSIS_SUBSECTIONS:
+            subsection_body = h4_sections.get(subsection, "").strip()
+            if subsection not in h4_sections:
+                errors.append(f"Acceptance Criteria Numerical Analysis is missing subsection: {subsection}")
+                continue
+            if not subsection_body:
+                errors.append(f"Acceptance Criteria Numerical Analysis subsection must include prose: {subsection}")
+                continue
+            prose_body = remove_fenced_blocks(subsection_body)
+            if not prose_body:
+                errors.append(f"Acceptance Criteria Numerical Analysis subsection must be prose, not code only: {subsection}")
+                continue
+            non_empty_lines = [line.strip() for line in prose_body.splitlines() if line.strip()]
+            if not non_empty_lines or not CONCLUSION_RE.match(non_empty_lines[-1]):
+                errors.append(
+                    "Acceptance Criteria Numerical Analysis subsection must end with an explicit "
+                    f"Conclusion: or 结论: sentence: {subsection}"
+                )
 
     precision_body = h3_sections.get("### Precision Standards / 精度标准", "")
     if MARKDOWN_TABLE_RE.search(precision_body):

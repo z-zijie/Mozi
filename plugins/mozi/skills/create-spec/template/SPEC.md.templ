@@ -95,7 +95,25 @@ Specify measurable performance requirements or state that no additional performa
 Specify verifiable criteria for functional correctness, numeric conformance, shape inference, dtype coverage, error handling, and documentation completeness. Include all required subsections:
 
 ### Numerical Analysis / 数值分析
-Provide prose derived from `Mathematical Semantics / 数学语义` and `Functional Semantics / 功能语义`. Explain which operations are exact, rounded, saturated, clipped, nondeterministic, or tolerance-sensitive, and connect those observations to the precision scenarios below.
+Replace the guidance under each required H4 heading with operator-specific prose derived from `Mathematical Semantics / 数学语义`, `Functional Semantics / 功能语义`, dtype rules, and the precision scenarios below. If a topic does not apply, explain why it does not apply. Every H4 subsection must end with an explicit conclusion sentence beginning with `Conclusion:` or `结论:`.
+
+#### Floating Point Error Analysis / 浮点误差分析
+Identify every rounded operation, exact operation, cast, saturation/clamp, transcendental approximation, cancellation risk, and per-output error source. State how each source affects each output tolerance.
+
+#### Stability Analysis / 稳定性分析
+State whether the mathematical formulation is forward stable, backward stable, or potentially unstable. Describe transformations that improve stability and any inputs that remain numerically risky.
+
+#### Conditioning / 条件数
+Describe input-to-output sensitivity, ill-conditioned regions, discontinuities, zero or near-zero denominators, ties, overflow and underflow boundaries, and the final conditioning conclusion.
+
+#### Reduction Error Analysis / 归约误差分析
+Analyze accumulation depth, order sensitivity, worst-case error growth, reduction axis effects, deterministic versus nondeterministic reductions, or explicitly state why the operator has no reductions.
+
+#### Mixed Precision Analysis / 混合精度分析
+Define compute dtype, accumulation dtype, promotion or cast points, output storage dtype, precision loss, and behavior for unsupported or non-promoted dtype combinations.
+
+#### Error Budget / 误差预算
+Allocate tolerance by error source and connect the final `atol` and `rtol` values directly to the YAML precision scenarios.
 
 ### Precision Standards / 精度标准
 Include exactly one `yaml` fenced code block using this structure. Do not use a Markdown table.

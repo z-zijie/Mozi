@@ -197,7 +197,29 @@ No additional performance requirement is specified by the PRD.
 
 ## 18. Acceptance Criteria / 验收标准
 ### Numerical Analysis / 数值分析
-AddRelu has one arithmetic addition followed by an exact ReLU clamp in the promoted supported floating dtype. For `float32` outputs, validation compares against the NumPy reference with `1e-6` absolute and relative tolerance to cover normal floating addition rounding. For `float16` outputs, validation uses `1e-3` absolute and relative tolerance to cover half-precision rounding. Empty outputs require shape and dtype agreement and have no elementwise numeric error.
+#### Floating Point Error Analysis / 浮点误差分析
+AddRelu performs one rounded floating-point addition per output element in the promoted supported dtype, followed by an exact ReLU selection between the rounded sum and zero. The ReLU clamp does not introduce additional rounding, but it can expose the sign of a rounded near-zero sum by selecting zero when the rounded sum is non-positive. There are no transcendental approximations, saturating arithmetic modes, or additional casts beyond the supported dtype promotion and output storage rules. The output `y` therefore inherits one addition-rounding error source for non-empty float tensors; empty outputs have no elementwise numerical error and are validated by shape and dtype.
+Conclusion: AddRelu precision tolerance is driven by one rounded addition per output element, with no extra error contribution from the ReLU clamp.
+
+#### Stability Analysis / 稳定性分析
+The formulation `max(x + bias, 0)` is forward stable for ordinary inputs because it evaluates the specified expression directly with one rounded addition. The only numerically risky region is near the ReLU threshold, where a small addition-rounding difference around zero can change whether the output is exactly zero or a small positive value. No algebraic transformation is required to improve stability because the operator has no subtractive reformulation, reciprocal, normalization, or iterative computation.
+Conclusion: AddRelu is stable for supported inputs except for expected threshold sensitivity when the exact sum is near zero.
+
+#### Conditioning / 条件数
+For elements whose exact broadcasted sum is positive, the output sensitivity to `x` and `bias` is the sensitivity of addition and is locally well conditioned. For elements whose exact sum is negative, the output is clamped to zero and is insensitive to small perturbations that stay negative. At the discontinuity where the exact sum is zero, the derivative changes abruptly and the output is ill conditioned with respect to sign-changing perturbations. There are no denominators, ties, or reduction axes; overflow and underflow behavior follows the supported floating dtype and reference addition semantics.
+Conclusion: AddRelu is well conditioned away from the zero threshold and explicitly ill conditioned at the ReLU boundary.
+
+#### Reduction Error Analysis / 归约误差分析
+AddRelu has no reductions, accumulations, or order-dependent aggregation. Broadcasting only selects which `x` and `bias` values participate in each independent elementwise addition. Because each output element uses exactly one addition, there is no accumulation depth, reduction-axis effect, or deterministic-versus-nondeterministic reduction behavior to budget.
+Conclusion: Reduction error does not apply to AddRelu because the operator is purely elementwise.
+
+#### Mixed Precision Analysis / 混合精度分析
+Supported `float16` and `float32` combinations follow the dtype promotion rules in `InferDtype`; computation and output storage use the promoted supported dtype. A `float16` result may lose precision from half-precision addition and half-precision output storage, while a `float32` result uses the tighter float32 tolerance. Unsupported non-floating dtype combinations raise an error instead of silently casting, and no hidden higher-precision accumulation is specified by the PRD.
+Conclusion: Mixed precision behavior is defined by explicit promotion to the output dtype, so tolerance scenarios separate float16 and float32 outputs.
+
+#### Error Budget / 误差预算
+The float32 scenario allocates `atol=1.0e-6` and `rtol=1.0e-6` to one rounded float32 addition plus threshold comparison against zero. The float16 scenario allocates `atol=1.0e-3` and `rtol=1.0e-3` to half-precision addition and output storage. The empty-output scenario allocates `atol=0.0` and `rtol=0.0` because there are no elements to compare numerically; only shape and dtype equality are meaningful. These budgets match the YAML scenarios below and apply to the sole output `y`.
+Conclusion: The precision YAML tolerances are fully allocated to AddRelu's one addition-rounding source and dtype-specific output precision.
 
 ### Precision Standards / 精度标准
 
