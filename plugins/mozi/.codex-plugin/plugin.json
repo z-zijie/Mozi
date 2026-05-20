@@ -1,7 +1,7 @@
 {
   "name": "mozi",
   "version": "0.1.0",
-  "description": "Codex plugin for an end-to-end NPU operator development harness, including normalized operator PRD generation, PRD review, behavioral SPEC generation, and SPEC review.",
+  "description": "NPU operator workflow plugin for PRD generation, PRD review, SPEC generation, and SPEC review.",
   "author": {
     "name": "z-zijie",
     "email": "z-zijie@users.noreply.github.com",
@@ -16,14 +16,15 @@
     "harness",
     "prd",
     "spec",
-    "codex-plugin"
+    "codex-plugin",
+    "claude-code-plugin"
   ],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Mozi",
     "shortDescription": "Generate PRDs, review readiness, and create SPECs for NPU operator work.",
-    "longDescription": "Mozi is a Codex plugin for an end-to-end NPU operator development harness. The current workflows provide $mozi:create-prd to generate a normalized operator PRD from a brief user prompt or revise an existing PRD from review feedback, $mozi:review-prd to score a PRD for SPEC readiness, $mozi:create-spec to generate or revise a behavioral operator SPEC from a PRD, and $mozi:review-spec to score SPEC quality as YAML.",
+    "longDescription": "Mozi is an end-to-end NPU operator development harness packaged for agent CLIs. The current workflows provide $mozi:create-prd to generate a normalized operator PRD from a brief user prompt or revise an existing PRD from review feedback, $mozi:review-prd to score a PRD for SPEC readiness, $mozi:create-spec to generate or revise a behavioral operator SPEC from a PRD, and $mozi:review-spec to score SPEC quality as YAML.",
     "developerName": "z-zijie",
     "category": "Productivity",
     "capabilities": [

@@ -1,0 +1,20 @@
+{
+  "name": "mozi-dev",
+  "description": "Development marketplace for the Mozi NPU operator workflow plugin",
+  "owner": {
+    "name": "z-zijie",
+    "email": "z-zijie@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "mozi",
+      "description": "NPU operator PRD and SPEC workflow plugin",
+      "version": "0.1.0",
+      "source": "./plugins/mozi",
+      "author": {
+        "name": "z-zijie",
+        "email": "z-zijie@users.noreply.github.com"
+      }
+    }
+  ]
+}

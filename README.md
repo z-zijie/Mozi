@@ -1,6 +1,6 @@
 # Mozi
 
-Mozi is a Codex plugin for an end-to-end NPU operator development harness.
+Mozi is an agent CLI plugin for an end-to-end NPU operator development harness. It is packaged from one shared plugin source at `plugins/mozi/` for both Codex and Claude Code, following the same single-source packaging model used by Superpowers.
 
 ## Supported Workflows
 
@@ -72,16 +72,39 @@ The SPEC validator requires the rendered or revised SPEC to keep the template he
 
 ## Installation
 
+Install Mozi separately in each agent CLI you use. Both installations load the same shared workflows from `plugins/mozi/skills/`.
+
+### Codex CLI
+
 Install the Mozi Codex plugin marketplace:
 
 ```bash
 codex plugin marketplace add z-zijie/Mozi
 ```
 
+For local development, the repo-local Codex marketplace is `.agents/plugins/marketplace.json`, and its `mozi` entry points to `./plugins/mozi`.
+
+### Claude Code
+
+Register this repository as a Claude Code plugin marketplace, then install `mozi` from it:
+
+```text
+/plugin marketplace add z-zijie/Mozi
+/plugin install mozi@mozi-dev
+```
+
+For local development, the Claude marketplace is `.claude-plugin/marketplace.json`, and its `mozi` entry points to `./plugins/mozi`.
+
 ## Plugin Notes
 
-The plugin name is `mozi`, and the outer folder name matches the manifest `name` field as required by the Codex plugin format.
+The plugin name is `mozi`, and the canonical plugin folder is `plugins/mozi/`. Codex uses `plugins/mozi/.codex-plugin/plugin.json`; Claude Code uses `plugins/mozi/.claude-plugin/plugin.json`.
 
-The marketplace name is `mozi-marketplace`, and its plugin entry uses the repo-local source path `./plugins/mozi`.
+The Codex marketplace name is `mozi-marketplace`. The Claude Code development marketplace name is `mozi-dev`. Both plugin entries use the repo-local source path `./plugins/mozi`.
 
-The plugin bundles lifecycle hooks at `plugins/mozi/hooks/hooks.json`. Plugin-bundled hooks are opt-in in this Codex release, so users must enable `plugin_hooks` and trust the non-managed hook before it runs.
+The plugin bundles Codex lifecycle hooks at `plugins/mozi/hooks/hooks.json`. Plugin-bundled hooks are opt-in in this Codex release, so users must enable `plugin_hooks` and trust the non-managed hook before it runs. Claude Code hook support may differ by release; the Mozi workflows do not rely on hooks as the final success signal. They run the bundled validators manually before reporting success.
+
+Validate the dual-host plugin layout from the repository root:
+
+```bash
+scripts/validate-plugin-layout.sh
+```
