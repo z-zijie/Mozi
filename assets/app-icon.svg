@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Mozi">
+  <rect width="256" height="256" rx="48" fill="#2563EB"/>
+  <path d="M48 176V80h34l46 58 46-58h34v96h-30v-57l-42 53h-16l-42-53v57H48z" fill="#FFFFFF"/>
+  <path d="M70 204h116" stroke="#93C5FD" stroke-width="12" stroke-linecap="round"/>
+</svg>

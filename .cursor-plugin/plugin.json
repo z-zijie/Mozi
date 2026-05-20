@@ -1,0 +1,21 @@
+{
+  "name": "mozi",
+  "displayName": "Mozi",
+  "description": "NPU operator workflow plugin for PRD generation, PRD review, SPEC generation, and SPEC review",
+  "version": "0.1.0",
+  "author": {
+    "name": "z-zijie",
+    "email": "z-zijie@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/z-zijie/Mozi",
+  "repository": "https://github.com/z-zijie/Mozi",
+  "license": "GPL-3.0-only",
+  "keywords": [
+    "npu",
+    "operator-development",
+    "prd",
+    "spec"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks-cursor.json"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "mozi",
+  "description": "NPU operator workflow plugin for PRD generation, PRD review, SPEC generation, and SPEC review",
+  "version": "0.1.0",
+  "contextFileName": "GEMINI.md"
+}
